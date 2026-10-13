@@ -3,68 +3,119 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0c0f">
 <title>All Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f2efe8;--fg:#1c1b19;--mut:#6d6a63;--card:#fff;--line:#d8d4c9;--acc:#b4341f;--accfg:#fff}
-@media (prefers-color-scheme:dark){:root{--bg:#161412;--fg:#ece8df;--mut:#a09b90;--card:#201d1a;--line:#35312b;--acc:#ff7a5c;--accfg:#1a0d09}}
+:root{--bg:#0d0c0f;--bg2:#17141b;--card:rgba(255,255,255,.045);--line:rgba(255,255,255,.1);--fg:#f4efe6;--mut:#a39d94;--gold:#e8c06a;--gold2:#b8883a;--ink:#1a1304;--err:#ff8a73;--ok:#7fe0a8}
+@media (prefers-color-scheme:light){:root{--bg:#f6f1e7;--bg2:#ece4d3;--card:rgba(255,255,255,.7);--line:rgba(60,40,10,.14);--fg:#1d170c;--mut:#6e6552;--gold:#9a6a14;--gold2:#6f4a0a;--ink:#fff8e8;--err:#b3341d;--ok:#1b7a47}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Georgia,serif;padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
-main{max-width:680px;margin:0 auto}
-h1{font-size:2rem;margin:10px 0 4px;letter-spacing:-.02em}
-.s{color:var(--mut);margin:0 0 18px}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-input,select,button,a.b{font:inherit;font-family:system-ui,sans-serif;font-size:.95rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:11px 14px}
-input{flex:1 1 260px;min-width:0}
-button.p{background:var(--acc);border-color:var(--acc);color:var(--accfg);font-weight:600;cursor:pointer}
-button:disabled{opacity:.6}
-input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-#st{font:.9rem system-ui,sans-serif;color:var(--mut);margin:12px 0}
-#res{display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-#res img{width:100%;max-height:260px;object-fit:cover;border-radius:8px;margin-bottom:10px}
-#res h2{font-size:1.05rem;margin:0 0 4px}
-.meta{font:.82rem system-ui,sans-serif;color:var(--mut);margin-bottom:10px}
-.links{display:flex;flex-direction:column;gap:8px}
-a.b{text-decoration:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
-a.b span{color:var(--mut);font-size:.8rem}
-.err{color:var(--acc)}
-.note{font:.82rem/1.5 system-ui,sans-serif;color:var(--mut);margin-top:22px}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;color:var(--fg);font:16px/1.55 Manrope,system-ui,sans-serif;
+ background:radial-gradient(900px 500px at 85% -10%,color-mix(in srgb,var(--gold) 16%,transparent),transparent 60%),radial-gradient(700px 500px at -10% 110%,color-mix(in srgb,var(--gold2) 14%,transparent),transparent 60%),linear-gradient(var(--bg),var(--bg2));
+ background-attachment:fixed;padding:max(20px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom))}
+main{max-width:720px;margin:0 auto}
+header{padding:28px 0 22px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.01em;color:var(--mut);font-size:.95rem}
+.logo i{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink)}
+h1{font:800 clamp(2.3rem,8vw,3.6rem)/1.02 Fraunces,Georgia,serif;letter-spacing:-.03em;margin:18px 0 12px}
+h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);max-width:48ch;margin:0}
+.box{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 24px 60px -24px rgba(0,0,0,.55)}
+.in{display:flex;gap:8px;flex-wrap:wrap}
+.in input{flex:1 1 220px;min-width:0;background:transparent;border:0;color:var(--fg);font:inherit;padding:14px 14px}
+.in input::placeholder{color:var(--mut)}
+.in input:focus{outline:none}
+.in select{background:color-mix(in srgb,var(--fg) 7%,transparent);border:1px solid var(--line);color:var(--fg);font:inherit;font-size:.85rem;border-radius:12px;padding:0 10px;max-width:100%}
+.go{border:0;cursor:pointer;font:700 1rem Manrope,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:14px 24px;border-radius:14px;display:inline-flex;gap:8px;align-items:center;justify-content:center;flex:1 1 140px;transition:transform .15s,filter .15s}
+.go:hover{filter:brightness(1.08)}.go:active{transform:scale(.97)}.go:disabled{opacity:.65;cursor:progress}
+.box:focus-within{border-color:color-mix(in srgb,var(--gold) 60%,transparent)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 2px 0}
+.chip{font-size:.8rem;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:var(--card)}
+#st{min-height:24px;margin:16px 4px 0;font-size:.92rem;color:var(--mut)}
+#st.err{color:var(--err)}
+.sk{display:none;margin-top:18px;border-radius:20px;height:170px;border:1px solid var(--line);background:linear-gradient(100deg,var(--card) 30%,color-mix(in srgb,var(--fg) 9%,transparent) 50%,var(--card) 70%);background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+#res{display:none;margin-top:18px;border-radius:22px;overflow:hidden;background:var(--card);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#th{display:block;width:100%;max-height:300px;object-fit:cover}
+.body{padding:18px}
+#ti{font:600 1.2rem/1.3 Fraunces,Georgia,serif;margin:0 0 4px;overflow-wrap:anywhere}
+.meta{font-size:.82rem;color:var(--mut);margin-bottom:14px}
+.links{display:grid;gap:10px}
+.dl{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;color:var(--fg);font:inherit;background:color-mix(in srgb,var(--fg) 6%,transparent);border:1px solid var(--line);border-radius:14px;padding:12px 14px;transition:border-color .15s,background .15s}
+.dl:hover{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.dl .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);flex:none}
+.dl b{display:block;font-size:.98rem}.dl small{color:var(--mut);font-size:.78rem}
+.dl .tag{margin-left:auto;font-size:.72rem;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:2px 9px}
+.dl.done .ic{background:var(--ok)}
+.toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;pointer-events:none;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:.9rem;font-weight:600;transition:.3s;max-width:90vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <main>
-<h1>All Downloader</h1>
-<p class="s">TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud, CapCut. Link paste karo, baaki auto detect. Song ka naam likho to audio mil jayega.</p>
-<div class="row">
-  <input id="u" type="text" inputmode="url" placeholder="Link ya song ka naam" autocomplete="off">
-  <select id="p" aria-label="API"><option value="">Auto (fallback)</option></select>
-  <button class="p" id="go">Download</button>
+<header>
+  <span class="logo"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></i>All Downloader</span>
+  <h1>Ek link.<br><em>Har platform.</em></h1>
+  <p class="sub">TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud aur CapCut. Link paste karo ya song ka naam likho.</p>
+</header>
+
+<div class="box">
+  <div class="in">
+    <input id="u" type="text" inputmode="url" placeholder="Link ya song ka naam paste karo" autocomplete="off" aria-label="Link">
+    <select id="p" aria-label="API"><option value="">Auto</option></select>
+    <button class="go" id="go">Get media</button>
+  </div>
 </div>
-<div id="st"></div>
-<div id="res"><img id="th" alt="" hidden><h2 id="ti"></h2><div class="meta" id="mt"></div><div class="links" id="ln"></div></div>
-<p class="note">Sirf apna ya allowed content download karo. Free APIs kabhi band ho sakti hain, isliye Auto mode ek fail hone par agli API try karta hai.</p>
+<div class="chips"><span class="chip">TikTok</span><span class="chip">Instagram</span><span class="chip">YouTube</span><span class="chip">Facebook</span><span class="chip">Pinterest</span><span class="chip">SoundCloud</span><span class="chip">CapCut</span><span class="chip">Spotify search</span></div>
+
+<div id="st" role="status"></div>
+<div class="sk" id="sk"></div>
+<div id="res"><img id="th" alt="" hidden><div class="body"><h2 id="ti"></h2><div class="meta" id="mt"></div><div class="links" id="ln"></div></div></div>
+<footer>Sirf apna ya allowed content download karo. Auto mode ek API fail hone par agli try karta hai.</footer>
 </main>
+<div class="toast" id="toast"></div>
+
 <script>
 const $=id=>document.getElementById(id);
-fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{
-  $('p').innerHTML='<option value="">Auto (fallback)</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
-}).catch(()=>{});
+const ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
+const CHECK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const EXT={video:'mp4',audio:'mp3',image:'jpg'};
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{$('p').innerHTML='<option value="">Auto</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}).catch(()=>{});
+
+function startDownload(l,title,btn){
+  const base=(title||'download').replace(/[^\w\- ]+/g,'').trim().slice(0,50)||'download';
+  const name=base+'-'+l.label.replace(/[^\w]+/g,'')+'.'+(EXT[l.type]||'mp4');
+  const a=document.createElement('a');
+  a.href='/api/get?url='+encodeURIComponent(l.url)+'&name='+encodeURIComponent(name);
+  a.download=name;document.body.appendChild(a);a.click();a.remove();
+  btn.classList.add('done');btn.querySelector('.ic').innerHTML=CHECK;
+  toast('Download shuru ho gaya');
+}
 async function go(){
-  const u=$('u').value.trim();if(!u){$('st').textContent='Link ya naam daalo.';return}
-  $('go').disabled=true;$('res').style.display='none';$('st').className='';$('st').textContent='Dhundh raha hoon...';
+  const u=$('u').value.trim();if(!u){$('st').className='';$('st').textContent='Link ya naam daalo.';return}
+  $('go').disabled=true;$('res').style.display='none';$('sk').style.display='block';$('st').className='';$('st').textContent='';
   try{
     const r=await fetch('/api/dl?url='+encodeURIComponent(u)+($('p').value?'&p='+$('p').value:''));
     const j=await r.json();
     if(!j.ok)throw new Error(j.error+(j.tried?' ('+j.tried.join(', ')+')':''));
-    $('st').textContent='';
-    $('ti').textContent=j.title||'Download ready';
-    $('mt').textContent=j.provider+' / '+j.platform;
+    $('ti').textContent=j.title||'Ready to download';
+    $('mt').textContent=j.provider;
     const th=$('th');if(j.thumb){th.src=j.thumb;th.hidden=false}else th.hidden=true;
     $('ln').innerHTML='';
-    j.links.forEach(l=>{const a=document.createElement('a');a.className='b';a.href=l.url;a.target='_blank';a.rel='noopener noreferrer';a.download='';
-      a.innerHTML=`${l.label}<span>${l.type}</span>`;$('ln').appendChild(a)});
+    j.links.forEach(l=>{
+      const b=document.createElement('button');b.className='dl';
+      b.innerHTML=`<span class="ic">${ICON}</span><span><b>${l.label}</b><small>Tap to download</small></span><span class="tag">${l.type}</span>`;
+      b.onclick=()=>startDownload(l,j.title,b);$('ln').appendChild(b);
+    });
     $('res').style.display='block';
   }catch(e){$('st').className='err';$('st').textContent=e.message}
-  $('go').disabled=false;
+  $('sk').style.display='none';$('go').disabled=false;
 }
 $('go').onclick=go;$('u').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
 </script>
