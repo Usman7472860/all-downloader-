@@ -182,10 +182,11 @@ const detect = (u) =>
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  const { p, url, list } = req.query;
+  const { p, url, list, order } = req.query;
   if (list) return res.json(Object.entries(P).map(([id, v]) => ({ id, name: v.name, plat: v.plat })));
   if (!url) return res.status(400).json({ ok: false, error: 'url missing' });
   const plat = detect(url);
+  if (order) return res.json({ platform: plat, ids: Object.keys(P).filter((k) => P[k].plat === plat).map((id) => ({ id, name: P[id].name })) });
   const ids = p && P[p] ? [p] : Object.keys(P).filter((k) => P[k].plat === plat);
   const errors = [];
   // run all providers for this platform in parallel; first one with links wins (avoids Vercel function timeout)
