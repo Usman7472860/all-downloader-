@@ -1,5 +1,6 @@
 // Vercel serverless proxy: GET /api/dl?p=<provider>&url=<link>   |   GET /api/dl?list=1
 // Keys can be overridden with env vars SANKA_KEY and KAYZU_KEY.
+export const config = { maxDuration: 30 };
 const SANKA = process.env.SANKA_KEY || 'planaai';
 const KAYZU = process.env.KAYZU_KEY || 'kayzuMD';
 const UA = { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
@@ -74,24 +75,48 @@ const P = {
   'fb-scrape': { name: 'Facebook (direct scrape)', plat: 'facebook', run: async (u) => {
     const unesc = (x) => { try { return JSON.parse('"' + x + '"'); } catch { return x.replace(/\\\//g, '/').replace(/\\u0025/g, '%').replace(/\\u0026/g, '&'); } };
     const pick = (h, k) => { const m = h.match(new RegExp('"' + k + '":"([^"]+)"')); return m ? unesc(m[1]) : null; };
-    if (/fb\.watch|\/share\//.test(u)) { try { u = (await fetch(u, { redirect: 'follow', headers: UA })).url || u; } catch {} }
-    const pages = [`https://www.facebook.com/plugins/video.php?href=${q(u)}&show_text=0`, u];
-    for (const pg of pages) {
+    const og = (h, k) => { const m = h.match(new RegExp('<meta[^>]+property="' + k + '"[^>]+content="([^"]+)"', 'i')) || h.match(new RegExp('<meta[^>]+content="([^"]+)"[^>]+property="' + k + '"', 'i')); return m ? clean(m[1]) : null; };
+    const BOT = { 'user-agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uagent.php)', 'accept-language': 'en-US,en;q=0.9' };
+    if (/fb\.watch|\/share\//.test(u)) { try { u = (await fetch(u, { redirect: 'follow', headers: BOT })).url || u; } catch {} }
+    const tries = [
+      [`https://www.facebook.com/plugins/video.php?href=${q(u)}&show_text=0`, { ...UA, 'accept-language': 'en-US,en;q=0.9' }],
+      [u, BOT],
+      [u.replace('www.facebook.com', 'm.facebook.com'), { 'user-agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36' }],
+      [u, { ...UA, 'accept-language': 'en-US,en;q=0.9' }],
+    ];
+    for (const [pg, headers] of tries) {
       try {
-        const h = await (await fetch(pg, { redirect: 'follow', headers: { ...UA, 'accept-language': 'en-US,en;q=0.9' } })).text();
+        const h = await (await fetch(pg, { redirect: 'follow', headers })).text();
         const hd = pick(h, 'browser_native_hd_url') || pick(h, 'playable_url_quality_hd') || pick(h, 'hd_src');
-        const sd = pick(h, 'browser_native_sd_url') || pick(h, 'playable_url') || pick(h, 'sd_src');
-        if (hd || sd) return out('Facebook video', '', [L('HD', hd, 'video'), L('SD', sd, 'video')]);
+        const sd = pick(h, 'browser_native_sd_url') || pick(h, 'playable_url') || pick(h, 'sd_src') || og(h, 'og:video:secure_url') || og(h, 'og:video:url') || og(h, 'og:video');
+        if (hd || sd) return out(og(h, 'og:title') || 'Facebook video', og(h, 'og:image'), [L('HD', hd, 'video'), L('SD', sd, 'video')]);
       } catch {}
     }
-    throw 0;
+    throw 'scrape blocked';
+  } },
+  'fb-davidcyril': { name: 'Facebook (DavidCyril)', plat: 'facebook', run: async (u) => {
+    const j = await get(`https://apis.davidcyriltech.my.id/facebook2?url=${q(u)}`);
+    const v = j?.video; if (!j.status || !v?.downloads?.length) throw 'no video';
+    return out(v.title, v.thumbnail, v.downloads.map((d) => L(d.quality || 'Video', d.downloadUrl, 'video')));
+  } },
+  'fb-agatz': { name: 'Facebook (Agatz)', plat: 'facebook', run: async (u) => sweep(await get(`https://api.agatz.xyz/api/facebook?url=${q(u)}`)) },
+  'fb-dorratz': { name: 'Facebook (Dorratz)', plat: 'facebook', run: async (u) => sweep(await get(`https://api.dorratz.com/fbvideo?url=${q(u)}`)) },
+  'fb-fdownloader': { name: 'Facebook (FDownloader)', plat: 'facebook', run: async (u) => {
+    const H = { ...UA, 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', 'x-requested-with': 'XMLHttpRequest' };
+    const v = await (await fetch('https://fdownloader.net/api/userverify', { method: 'POST', headers: H, body: `url=${q(u)}` })).json();
+    if (!v.success || !v.token) throw 'verify failed';
+    const body = `k_exp=${Math.floor(Date.now() / 1000) + 300}&k_token=${v.token.split('.')[2]}&q=${q(u)}&lang=en&web=fdownloader.net&v=v2&w=&cftoken=${v.token}`;
+    const j = await (await fetch('https://v3.fdownloader.net/api/ajaxSearch', { method: 'POST', headers: H, body })).json();
+    const html = String(j.data || '');
+    const links = [...html.matchAll(/href="(https?:\/\/[^"]+)"/g)].map((m) => clean(m[1])).filter((x) => /fbcdn|\.mp4|download/i.test(x) && !/fdownloader\.net\/?$/.test(x));
+    return out(html.match(/<h3[^>]*>([^<]+)</)?.[1] || 'Facebook video', html.match(/<img[^>]+src="([^"]+)"/)?.[1], links.map((x, i) => L(i === 0 ? 'Best' : 'Option ' + (i + 1), x, 'video')));
   } },
   'fdown-isuru': { name: 'Facebook (fdown.isuru)', plat: 'facebook', run: async (u) => {
     const r = await fetch('https://fdown.isuru.eu.org/info', { method: 'POST', headers: { ...UA, 'content-type': 'application/json' }, body: JSON.stringify({ url: u }) });
     return sweep(await r.json());
   } },
   'fdown-facebook': { name: 'Facebook (FDown)', plat: 'facebook', run: async (u) => {
-    const r = await fetch('https://fdown.net/download.php', { method: 'POST', headers: { ...UA, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ URLz: u }) });
+    const r = await fetch('https://fdown.net/download.php', { method: 'POST', headers: { ...UA, 'content-type': 'application/x-www-form-urlencoded', origin: 'https://fdown.net', referer: 'https://fdown.net/' }, body: new URLSearchParams({ URLz: u }) });
     const h = await r.text();
     const hd = h.match(/id="hdlink" href="(.+?)" download/)?.[1], sd = h.match(/id="sdlink" href="(.+?)" download/)?.[1];
     if (!hd && !sd) throw 0;
@@ -116,6 +141,40 @@ const P = {
   } },
 };
 
+
+// ---- Extra Facebook providers (generic JSON; filtered so thumbnails/echoed page links never count as a result) ----
+const fbSweep = (json) => {
+  const s = sweep(json), seen = new Set();
+  s.links = s.links.filter((l) => l.type !== 'image' && !/thumb|cover|image|poster|avatar|profile|preview/i.test(l.label)
+    && !/^https?:\/\/(www\.|m\.|web\.)?(facebook\.com|fb\.watch)\//.test(l.url) && !seen.has(l.url) && seen.add(l.url));
+  if (!s.links.length) throw 'no video links';
+  return s;
+};
+[
+  ['fb-azbry', 'Facebook (Azbry)', 'https://api.azbry.com/api/download/facebook?url={u}'],
+  ['fb-yupra', 'Facebook (Yupra)', 'https://api.yupra.my.id/api/downloader/facebook?url={u}'],
+  ['fb-mif', 'Facebook (Mifinfinity)', 'https://api.mifinfinity.my.id/api/downloader/facebook?url={u}'],
+  ['fb-nexray', 'Facebook (Nexray)', 'https://api.nexray.eu.cc/downloader/facebook?url={u}'],
+  ['fb-siputzx', 'Facebook (Siputzx)', 'https://api.siputzx.my.id/api/d/facebook?url={u}'],
+  ['fb-vreden', 'Facebook (Vreden)', 'https://api.vreden.my.id/api/fbdl?url={u}'],
+  ['fb-vreden2', 'Facebook (Vreden v1)', 'https://api.vreden.my.id/api/v1/download/facebook?url={u}'],
+  ['fb-ryzumi', 'Facebook (Ryzumi)', 'https://api.ryzumi.vip/api/downloader/fbdl?url={u}'],
+  ['fb-nekolabs', 'Facebook (Nekolabs)', 'https://api.nekolabs.my.id/downloader/facebook?url={u}'],
+  ['fb-akuari', 'Facebook (Akuari)', 'https://api.akuari.my.id/downloader/fbdl?link={u}'],
+  ['fb-diioffc', 'Facebook (Diioffc)', 'https://api.diioffc.web.id/api/download/facebook?url={u}'],
+  ['fb-simplebot', 'Facebook (Simplebot)', 'https://restapi-v2.simplebot.my.id/download/facebook?url={u}'],
+  ['fb-nexadev', 'Facebook (Nexadev)', 'https://api.nexadev.my.id/api/downloader/facebook?url={u}'],
+  ['fb-synox', 'Facebook (Synoxcloud)', 'https://api.synoxcloud.xyz/downloader/facebook?url={u}'],
+].forEach(([id, name, tpl]) => { P[id] = { name, plat: 'facebook', run: async (u) => fbSweep(await get(tpl.replace('{u}', q(u)))) }; });
+
+P['fb-getfvid'] = { name: 'Facebook (GetFVid)', plat: 'facebook', run: async (u) => {
+  const r = await fetch('https://getfvid.com/downloader', { method: 'POST', headers: { ...UA, 'content-type': 'application/x-www-form-urlencoded', origin: 'https://getfvid.com', referer: 'https://getfvid.com/' }, body: new URLSearchParams({ url: u }) });
+  const h = await r.text();
+  const links = [...h.matchAll(/href="(https?:\/\/[^"]+)"[^>]*(?:download|btn)/gi)].map((m) => clean(m[1])).filter((x) => !/getfvid\.com/.test(x));
+  if (!links.length) throw 'no links';
+  return out(h.match(/<title>([^<]+)/)?.[1] || 'Facebook video', '', links.map((x, i) => L('Link ' + (i + 1), x, 'video')));
+} };
+
 const detect = (u) =>
   /tiktok\.com/.test(u) ? 'tiktok' : /instagram\.com/.test(u) ? 'instagram' : /pinterest\.|pin\.it/.test(u) ? 'pinterest'
   : /soundcloud\.com/.test(u) ? 'soundcloud' : /youtu\.?be/.test(u) ? 'youtube' : /facebook\.com|fb\.watch/.test(u) ? 'facebook'
@@ -129,12 +188,15 @@ export default async function handler(req, res) {
   const plat = detect(url);
   const ids = p && P[p] ? [p] : Object.keys(P).filter((k) => P[k].plat === plat);
   const errors = [];
-  for (const id of ids) {   // auto fallback: next provider if one fails
-    try {
-      const r = await Promise.race([P[id].run(url), new Promise((_, rej) => setTimeout(() => rej('timeout'), 20000))]);
-      if (r.links.length) return res.json({ ok: true, provider: P[id].name, platform: plat, ...r });
-      errors.push(id + ': no links');
-    } catch (e) { errors.push(id + ': failed'); }
+  // run all providers for this platform in parallel; first one with links wins (avoids Vercel function timeout)
+  const jobs = ids.map((id) =>
+    Promise.race([P[id].run(url), new Promise((_, rej) => setTimeout(() => rej('timeout'), 15000))])
+      .then((r) => { if (!r.links.length) throw 'no links'; return { id, r }; })
+      .catch((e) => { errors.push(id + ': ' + (e?.message || e || 'failed')); throw e; }));
+  try {
+    const { id, r } = await Promise.any(jobs);
+    return res.json({ ok: true, provider: P[id].name, platform: plat, ...r });
+  } catch {
+    return res.status(502).json({ ok: false, error: 'Sab APIs fail ho gayi ya link galat hai', tried: errors });
   }
-  res.status(502).json({ ok: false, error: 'Sab APIs fail ho gayi ya link galat hai', tried: errors });
 }
