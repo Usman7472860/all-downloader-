@@ -57,7 +57,19 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
 #log .fr{color:var(--err)}
 footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+#about{margin-top:40px;padding:22px;border-radius:22px;background:var(--card);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#about .ab{display:flex;align-items:center;gap:16px}
+#about img{width:96px;height:96px;border-radius:50%;object-fit:cover;flex:none;padding:3px;background:linear-gradient(135deg,var(--gold),var(--gold2))}
+#about h2{font:700 1.4rem Fraunces,Georgia,serif;margin:0}
+#about .role{margin:2px 0 0;color:var(--gold);font-weight:700;font-size:.9rem}
+#about .bio{margin:16px 0 0;color:var(--fg);opacity:.9}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tags span{font-size:.78rem;border:1px solid var(--line);border-radius:99px;padding:4px 11px;color:var(--mut)}
+.dvl{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.dvl a{font:700 .85rem Manrope,sans-serif;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:9px 16px;border-radius:12px}
+.dvl a:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 </style>
+<link rel="stylesheet" href="player.css">
 </head>
 <body>
 <main>
@@ -80,10 +92,22 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 <div id="log"></div>
 <div class="sk" id="sk"></div>
 <div id="res"><img id="th" alt="" hidden><div class="body"><h2 id="ti"></h2><div class="meta" id="mt"></div><div class="links" id="ln"></div></div></div>
+<section id="lib" hidden>
+  <div class="lh"><h2>Meri downloads</h2><small id="lsz"></small></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="lgrid" id="lgrid"></div>
+</section>
+<section id="about">
+  <div class="ab"><img src="developer.jpg" alt="Developer photo" width="96" height="96"><div><h2 id="dvn"></h2><p class="role" id="dvr"></p></div></div>
+  <p class="bio" id="dvb"></p>
+  <div class="tags" id="dvt"></div>
+  <div class="dvl" id="dvl"></div>
+</section>
 <footer>Sirf apna ya allowed content download karo. Auto mode ek API fail hone par agli try karta hai.</footer>
 </main>
 <div class="toast" id="toast"></div>
 
+<script src="player.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
@@ -92,16 +116,9 @@ const EXT={video:'mp4',audio:'mp3',image:'jpg'};
 let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
 fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{$('p').innerHTML='<option value="">Auto</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}).catch(()=>{});
 
-function startDownload(l,title,btn){
-  const base=(title||'download').replace(/[^\w\- ]+/g,'').trim().slice(0,50)||'download';
-  const name=base+'-'+l.label.replace(/[^\w]+/g,'')+'.'+(EXT[l.type]||'mp4');
-  const a=document.createElement('a');
-  a.href='/api/get?url='+encodeURIComponent(l.url)+'&name='+encodeURIComponent(name);
-  a.download=name;document.body.appendChild(a);a.click();a.remove();
-  btn.classList.add('done');btn.querySelector('.ic').innerHTML=CHECK;
-  toast('Download shuru ho gaya');
-}
+function startDownload(l,title,btn){Lib.download(l,title,window.curThumb||'',btn)}
 function render(j){
+  window.curThumb=j.thumb||'';
   $('ti').textContent=j.title||'Ready to download';
   $('mt').textContent=j.provider;
   const th=$('th');if(j.thumb){th.src=j.thumb;th.hidden=false}else th.hidden=true;
@@ -143,6 +160,20 @@ async function go(){
   $('sk').style.display='none';$('go').disabled=false;
 }
 $('go').onclick=go;$('u').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+
+// ---- About developer: yahan apni details badlo ----
+const DEV={
+  name:'Your Name',
+  role:'Full-stack developer',
+  bio:'Salam! Main is website ka developer hoon. Mujhe aise tools banana pasand hai jo kaam asaan kar dein: ek link, ek click aur kaam ho jaye. All Downloader ko maine free APIs, Vercel aur plain JavaScript se banaya hai, taake ye tez rahe aur use karna simple ho. Koi API fail ho to agli khud try hoti hai, aur download ki hui media seedha built-in player me chal jati hai.',
+  skills:['JavaScript','Node.js','Vercel','REST APIs','UI design'],
+  links:[['WhatsApp','https://wa.me/92300XXXXXXX'],['GitHub','https://github.com/username'],['Instagram','https://instagram.com/username']]
+};
+(function(){
+  $('dvn').textContent=DEV.name;$('dvr').textContent=DEV.role;$('dvb').textContent=DEV.bio;
+  DEV.skills.forEach(s=>{const e=document.createElement('span');e.textContent=s;$('dvt').appendChild(e)});
+  DEV.links.filter(l=>!/XXXX|\/username/.test(l[1])).forEach(([n,u])=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=n;$('dvl').appendChild(a)});
+})();
 </script>
 </body>
 </html>
