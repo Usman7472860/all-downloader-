@@ -52,6 +52,9 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
 .dl.done .ic{background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;pointer-events:none;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:.9rem;font-weight:600;transition:.3s;max-width:90vw}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+#log{margin:8px 4px 0;font-size:.82rem;color:var(--mut);display:grid;gap:3px}
+#log .okr{color:var(--ok)}
+#log .fr{color:var(--err)}
 footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -74,6 +77,7 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 <div class="chips"><span class="chip">TikTok</span><span class="chip">Instagram</span><span class="chip">YouTube</span><span class="chip">Facebook</span><span class="chip">Pinterest</span><span class="chip">SoundCloud</span><span class="chip">CapCut</span><span class="chip">Spotify search</span></div>
 
 <div id="st" role="status"></div>
+<div id="log"></div>
 <div class="sk" id="sk"></div>
 <div id="res"><img id="th" alt="" hidden><div class="body"><h2 id="ti"></h2><div class="meta" id="mt"></div><div class="links" id="ln"></div></div></div>
 <footer>Sirf apna ya allowed content download karo. Auto mode ek API fail hone par agli try karta hai.</footer>
@@ -97,23 +101,44 @@ function startDownload(l,title,btn){
   btn.classList.add('done');btn.querySelector('.ic').innerHTML=CHECK;
   toast('Download shuru ho gaya');
 }
+function render(j){
+  $('ti').textContent=j.title||'Ready to download';
+  $('mt').textContent=j.provider;
+  const th=$('th');if(j.thumb){th.src=j.thumb;th.hidden=false}else th.hidden=true;
+  $('ln').innerHTML='';
+  j.links.forEach(l=>{
+    const b=document.createElement('button');b.className='dl';
+    b.innerHTML=`<span class="ic">${ICON}</span><span><b>${l.label}</b><small>Tap to download</small></span><span class="tag">${l.type}</span>`;
+    b.onclick=()=>startDownload(l,j.title,b);$('ln').appendChild(b);
+  });
+  $('res').style.display='block';
+}
 async function go(){
   const u=$('u').value.trim();if(!u){$('st').className='';$('st').textContent='Link ya naam daalo.';return}
-  $('go').disabled=true;$('res').style.display='none';$('sk').style.display='block';$('st').className='';$('st').textContent='';
+  $('go').disabled=true;$('res').style.display='none';$('sk').style.display='block';$('st').className='';$('st').textContent='';$('log').innerHTML='';
+  const enc=encodeURIComponent(u);let done=false,total=0;
   try{
-    const r=await fetch('/api/dl?url='+encodeURIComponent(u)+($('p').value?'&p='+$('p').value:''));
-    const j=await r.json();
-    if(!j.ok)throw new Error(j.error+(j.tried?' ('+j.tried.join(', ')+')':''));
-    $('ti').textContent=j.title||'Ready to download';
-    $('mt').textContent=j.provider;
-    const th=$('th');if(j.thumb){th.src=j.thumb;th.hidden=false}else th.hidden=true;
-    $('ln').innerHTML='';
-    j.links.forEach(l=>{
-      const b=document.createElement('button');b.className='dl';
-      b.innerHTML=`<span class="ic">${ICON}</span><span><b>${l.label}</b><small>Tap to download</small></span><span class="tag">${l.type}</span>`;
-      b.onclick=()=>startDownload(l,j.title,b);$('ln').appendChild(b);
-    });
-    $('res').style.display='block';
+    let ids;const sel=$('p').value;
+    if(sel)ids=[{id:sel,name:$('p').selectedOptions[0].textContent}];
+    else ids=(await (await fetch('/api/dl?order=1&url='+enc)).json()).ids||[];
+    total=ids.length;
+    // loop: ek API fail ho to agli try, jab tak link na mile
+    for(let i=0;i<ids.length;i++){
+      const {id,name}=ids[i],n=`${i+1}/${total}`;
+      $('st').textContent=`API ${n} try ho rahi hai: ${name}`;
+      const row=document.createElement('div');row.textContent=`... ${n} ${name} try ho rahi hai`;$('log').appendChild(row);
+      let why='';
+      try{
+        const j=await (await fetch('/api/dl?url='+enc+'&p='+id)).json();
+        if(j.ok){row.textContent=`OK ${n} ${name} se link mil gaya`;row.className='okr';render(j);done=true;break}
+        why=((j.tried&&j.tried[0])||j.error||'').split(': ').slice(1).join(': ')||j.error||'';
+      }catch{why='network error'}
+      const last=i===ids.length-1;
+      row.className='fr';
+      row.textContent=`Fail ${n} ${name}${why?' ('+why.slice(0,40)+')':''}${last?'':', ab agli try kar raha hoon'}`;
+    }
+    if(done)$('st').textContent='';
+    else{$('st').className='err';$('st').textContent=total?`Sab ${total} APIs fail ho gayi. Link public hona chahiye.`:'Koi API nahi mili is link ke liye.'}
   }catch(e){$('st').className='err';$('st').textContent=e.message}
   $('sk').style.display='none';$('go').disabled=false;
 }
