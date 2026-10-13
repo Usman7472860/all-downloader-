@@ -71,6 +71,25 @@ const P = {
     return out(j.result.title, j.result.thumbnail, [L('MP4', j.result.download, 'video')]);
   } },
   'akuari-youtube': { name: 'YouTube (Akuari)', plat: 'youtube', run: async (u) => sweep(await get(`https://api.akuari.my.id/downloader/youtube?link=${q(u)}`)) },
+  'fb-scrape': { name: 'Facebook (direct scrape)', plat: 'facebook', run: async (u) => {
+    const unesc = (x) => { try { return JSON.parse('"' + x + '"'); } catch { return x.replace(/\\\//g, '/').replace(/\\u0025/g, '%').replace(/\\u0026/g, '&'); } };
+    const pick = (h, k) => { const m = h.match(new RegExp('"' + k + '":"([^"]+)"')); return m ? unesc(m[1]) : null; };
+    if (/fb\.watch|\/share\//.test(u)) { try { u = (await fetch(u, { redirect: 'follow', headers: UA })).url || u; } catch {} }
+    const pages = [`https://www.facebook.com/plugins/video.php?href=${q(u)}&show_text=0`, u];
+    for (const pg of pages) {
+      try {
+        const h = await (await fetch(pg, { redirect: 'follow', headers: { ...UA, 'accept-language': 'en-US,en;q=0.9' } })).text();
+        const hd = pick(h, 'browser_native_hd_url') || pick(h, 'playable_url_quality_hd') || pick(h, 'hd_src');
+        const sd = pick(h, 'browser_native_sd_url') || pick(h, 'playable_url') || pick(h, 'sd_src');
+        if (hd || sd) return out('Facebook video', '', [L('HD', hd, 'video'), L('SD', sd, 'video')]);
+      } catch {}
+    }
+    throw 0;
+  } },
+  'fdown-isuru': { name: 'Facebook (fdown.isuru)', plat: 'facebook', run: async (u) => {
+    const r = await fetch('https://fdown.isuru.eu.org/info', { method: 'POST', headers: { ...UA, 'content-type': 'application/json' }, body: JSON.stringify({ url: u }) });
+    return sweep(await r.json());
+  } },
   'fdown-facebook': { name: 'Facebook (FDown)', plat: 'facebook', run: async (u) => {
     const r = await fetch('https://fdown.net/download.php', { method: 'POST', headers: { ...UA, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ URLz: u }) });
     const h = await r.text();
