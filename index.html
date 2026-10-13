@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>All Downloader</title>
+<style>
+:root{--bg:#f2efe8;--fg:#1c1b19;--mut:#6d6a63;--card:#fff;--line:#d8d4c9;--acc:#b4341f;--accfg:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#161412;--fg:#ece8df;--mut:#a09b90;--card:#201d1a;--line:#35312b;--acc:#ff7a5c;--accfg:#1a0d09}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Georgia,serif;padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+main{max-width:680px;margin:0 auto}
+h1{font-size:2rem;margin:10px 0 4px;letter-spacing:-.02em}
+.s{color:var(--mut);margin:0 0 18px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,select,button,a.b{font:inherit;font-family:system-ui,sans-serif;font-size:.95rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:11px 14px}
+input{flex:1 1 260px;min-width:0}
+button.p{background:var(--acc);border-color:var(--acc);color:var(--accfg);font-weight:600;cursor:pointer}
+button:disabled{opacity:.6}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#st{font:.9rem system-ui,sans-serif;color:var(--mut);margin:12px 0}
+#res{display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+#res img{width:100%;max-height:260px;object-fit:cover;border-radius:8px;margin-bottom:10px}
+#res h2{font-size:1.05rem;margin:0 0 4px}
+.meta{font:.82rem system-ui,sans-serif;color:var(--mut);margin-bottom:10px}
+.links{display:flex;flex-direction:column;gap:8px}
+a.b{text-decoration:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+a.b span{color:var(--mut);font-size:.8rem}
+.err{color:var(--acc)}
+.note{font:.82rem/1.5 system-ui,sans-serif;color:var(--mut);margin-top:22px}
+</style>
+</head>
+<body>
+<main>
+<h1>All Downloader</h1>
+<p class="s">TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud, CapCut. Link paste karo, baaki auto detect. Song ka naam likho to audio mil jayega.</p>
+<div class="row">
+  <input id="u" type="text" inputmode="url" placeholder="Link ya song ka naam" autocomplete="off">
+  <select id="p" aria-label="API"><option value="">Auto (fallback)</option></select>
+  <button class="p" id="go">Download</button>
+</div>
+<div id="st"></div>
+<div id="res"><img id="th" alt="" hidden><h2 id="ti"></h2><div class="meta" id="mt"></div><div class="links" id="ln"></div></div>
+<p class="note">Sirf apna ya allowed content download karo. Free APIs kabhi band ho sakti hain, isliye Auto mode ek fail hone par agli API try karta hai.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{
+  $('p').innerHTML='<option value="">Auto (fallback)</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+}).catch(()=>{});
+async function go(){
+  const u=$('u').value.trim();if(!u){$('st').textContent='Link ya naam daalo.';return}
+  $('go').disabled=true;$('res').style.display='none';$('st').className='';$('st').textContent='Dhundh raha hoon...';
+  try{
+    const r=await fetch('/api/dl?url='+encodeURIComponent(u)+($('p').value?'&p='+$('p').value:''));
+    const j=await r.json();
+    if(!j.ok)throw new Error(j.error+(j.tried?' ('+j.tried.join(', ')+')':''));
+    $('st').textContent='';
+    $('ti').textContent=j.title||'Download ready';
+    $('mt').textContent=j.provider+' / '+j.platform;
+    const th=$('th');if(j.thumb){th.src=j.thumb;th.hidden=false}else th.hidden=true;
+    $('ln').innerHTML='';
+    j.links.forEach(l=>{const a=document.createElement('a');a.className='b';a.href=l.url;a.target='_blank';a.rel='noopener noreferrer';a.download='';
+      a.innerHTML=`${l.label}<span>${l.type}</span>`;$('ln').appendChild(a)});
+    $('res').style.display='block';
+  }catch(e){$('st').className='err';$('st').textContent=e.message}
+  $('go').disabled=false;
+}
+$('go').onclick=go;$('u').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+</script>
+</body>
+</html>
