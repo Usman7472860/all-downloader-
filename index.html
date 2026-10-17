@@ -142,6 +142,7 @@ function render(j){
   $('res').style.display='block';
 }
 async function go(){
+  if(window.askNotify)askNotify();
   const u=$('u').value.trim();if(!u){$('st').className='';$('st').textContent='Link ya naam daalo.';return}
   $('go').disabled=true;$('res').style.display='none';$('sk').style.display='block';$('st').className='';$('st').textContent='';$('log').innerHTML='';
   const enc=encodeURIComponent(u);let done=false,total=0;
@@ -184,6 +185,20 @@ const DEV={
   $('dvn').textContent=DEV.name;$('dvr').textContent=DEV.role;$('dvb').textContent=DEV.bio;
   DEV.skills.forEach(s=>{const e=document.createElement('span');e.textContent=s;$('dvt').appendChild(e)});
   DEV.links.filter(l=>!/XXXX|\/username/.test(l[1])).forEach(([n,u])=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=n;$('dvl').appendChild(a)});
+})();
+</script>
+<script>
+// Share target: dusri app (Facebook, TikTok, YouTube...) se Share > US MODS Downloader karne par link khud bhar ke download shuru.
+(function(){
+  const sp=new URLSearchParams(location.search);
+  if(!(sp.has('url')||sp.has('text')||sp.has('title')))return;
+  const all=[sp.get('url'),sp.get('text'),sp.get('title')].filter(Boolean).join(' ');
+  const m=all.match(/https?:\/\/[^\s<>"']+/);
+  history.replaceState(null,'',location.pathname);
+  const val=m?m[0].replace(/[.,;)\]]+$/,''):(sp.get('text')||sp.get('title')||'').trim();
+  if(!val)return;
+  const inp=document.getElementById('u');inp.value=val;
+  setTimeout(()=>{try{go()}catch(e){}},300);
 })();
 </script>
 <button id="inst" type="button">Install App</button>

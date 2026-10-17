@@ -31,26 +31,60 @@ function saveBlob(blob, name) {
 }
 function direct(src, name) { const a = document.createElement('a'); a.href = src; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 
+// ---------- notifications (progress + done) ----------
+const NICON = '/icons/icon-192.png';
+const fmtT = (sec) => !isFinite(sec) || sec < 0 ? '--' : sec < 60 ? Math.max(1, Math.round(sec)) + ' sec' : Math.floor(sec / 60) + ' min ' + String(Math.round(sec % 60)).padStart(2, '0') + ' sec';
+async function notify(tag, title, body, o = {}) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const opt = { body, tag, icon: NICON, badge: NICON, renotify: false, silent: true, ...o };
+    const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null;
+    if (reg && reg.showNotification) await reg.showNotification(title, opt); else new Notification(title, opt);
+  } catch {}
+}
+function askNotify() { try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch {} }
+window.askNotify = askNotify;
+
 async function download(l, title, thumb, btn) {
   const name = ((title || 'download').replace(/[^\w\- ]+/g, '').trim().slice(0, 50) || 'download') + '-' + l.label.replace(/[^\w]+/g, '') + '.' + (EXT[l.type] || 'mp4');
   const src = '/api/get?url=' + encodeURIComponent(l.url) + '&name=' + encodeURIComponent(name);
   const sm = btn.querySelector('small'); btn.disabled = true; sm.textContent = 'Connecting...';
+  const tag = 'dl-' + name, t0 = Date.now(), short = (title || name).slice(0, 60);
+  askNotify(); notify(tag, 'US MODS: download shuru', short + '\nConnecting...');
   const mk = (blob) => ({ id: Date.now() + Math.random().toString(36).slice(2, 6), title: title || name, type: l.type, label: l.label, thumb: thumb || '', src, blob: blob || null, size: blob ? blob.size : 0, ts: Date.now(), name });
   try {
     const r = await fetch(src);
     if (!r.ok || !r.body) throw new Error('server ' + r.status);
     const len = +r.headers.get('content-length') || 0;
-    if (len > MAX) { direct(src, name); await add(mk(null)); finish(btn, 'Large file: direct download started'); return; }
+    if (len > MAX) { direct(src, name); await add(mk(null)); notify(tag, '\u2705 Downloaded by US MODS', short + '\nBadi file: browser download manager me chal rahi hai', { silent: false, renotify: true }); finish(btn, 'Large file: direct download started'); return; }
     const rd = r.body.getReader(), parts = []; let got = 0;
-    for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; btn.style.setProperty('--p', len ? got / len : 0); sm.textContent = len ? `Downloading ${Math.round(got / len * 100)}%` : `Downloading ${mb(got)}`; }
+    let lastN = 0, lastB = 0, lastT = t0, speed = 0;
+    for (;;) {
+      const { done, value } = await rd.read(); if (done) break;
+      parts.push(value); got += value.length;
+      btn.style.setProperty('--p', len ? got / len : 0);
+      const now = Date.now();
+      if (now - lastT >= 700) { const inst = (got - lastB) / ((now - lastT) / 1000); speed = speed ? speed * 0.6 + inst * 0.4 : inst; lastB = got; lastT = now; }
+      const pct = len ? Math.round(got / len * 100) : 0, eta = len && speed ? (len - got) / speed : NaN;
+      const spd = speed ? mb(speed) + '/s' : '...';
+      sm.textContent = len ? `Downloading ${pct}% - ${spd}${isFinite(eta) ? ' - ' + fmtT(eta) + ' baqi' : ''}` : `Downloading ${mb(got)} - ${spd}`;
+      if (now - lastN >= 1000) {
+        lastN = now;
+        const bar = len ? '\u2593'.repeat(Math.round(pct / 10)) + '\u2591'.repeat(10 - Math.round(pct / 10)) + ' ' + pct + '%' : mb(got);
+        notify(tag, `US MODS: downloading${len ? ' ' + pct + '%' : ''}`,
+          `${short}\n${bar}\n${mb(got)}${len ? ' / ' + mb(len) : ''}  |  Speed ${spd}\n${len && isFinite(eta) ? 'Baqi: ' + fmtT(eta) : 'Time check ho raha hai...'}`);
+      }
+    }
     let ct = r.headers.get('content-type') || ''; if (!/^(video|audio|image)\//.test(ct)) ct = MIME[l.type] || 'application/octet-stream';
     const blob = new Blob(parts, { type: ct });
     saveBlob(blob, name);
     await add(mk(blob));
-    finish(btn, 'Saved. Neeche library me hai');
-  } catch (e) { btn.disabled = false; btn.style.removeProperty('--p'); sm.textContent = 'Tap to retry'; window.toast && toast('Download fail: ' + e.message); }
+    const took = (Date.now() - t0) / 1000;
+    notify(tag, '\u2705 Downloaded by US MODS', `${short}\nSize ${mb(blob.size)}  |  Time ${fmtT(took)}`, { silent: false, renotify: true, vibrate: [120, 60, 120] });
+    finish(btn, 'Downloaded by US MODS - library me save hai');
+  } catch (e) { btn.disabled = false; btn.style.removeProperty('--p'); sm.textContent = 'Tap to retry'; window.toast && toast('Download fail: ' + e.message); notify(tag, '\u274C US MODS: download fail', short + '\n' + e.message, { silent: false, renotify: true }); }
 }
-function finish(btn, msg) { btn.disabled = false; btn.classList.add('done'); btn.style.setProperty('--p', 1); btn.querySelector('small').textContent = msg; window.toast && toast('Download ho gaya'); }
+function finish(btn, msg) { btn.disabled = false; btn.classList.add('done'); btn.style.setProperty('--p', 1); btn.querySelector('small').textContent = msg; window.toast && toast('Downloaded by US MODS'); }
 async function add(it) { try { await tx('readwrite', (s) => s.put(it)); } catch { it.blob = null; } items.unshift(it); render(); }
 async function remove(id) { const i = items.find((x) => x.id === id); if (i && i._u) URL.revokeObjectURL(i._u); items = items.filter((x) => x.id !== id); try { await tx('readwrite', (s) => s.delete(id)); } catch {} render(); }
 
