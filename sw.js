@@ -1,5 +1,5 @@
 // Service worker: app shell offline cache. /api/* kabhi cache nahi hota.
-const CACHE = 'usmods-v3';
+const CACHE = 'usmods-v4';
 const SHELL = ['/', '/index.html', '/player.js', '/player.css', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {
