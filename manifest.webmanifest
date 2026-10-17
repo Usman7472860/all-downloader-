@@ -1,6 +1,6 @@
 {
-  "name": "US Mood Downloader",
-  "short_name": "US Mood",
+  "name": "US MODS Downloader",
+  "short_name": "US MODS",
   "description": "Ek link paste karo, video/audio download karo. Library aur player ke saath.",
   "id": "/",
   "start_url": "/?source=pwa",

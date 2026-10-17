@@ -1,4 +1,4 @@
-# US Mood Downloader
+# US MODS Downloader
 
 Ek link paste karo, website platform khud pehchan leti hai aur download links nikalti hai. Download ke baad file neeche **library** me aa jati hai, jahan se built-in player me chala sakte ho.
 
