@@ -57,8 +57,8 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
 .dl b{display:block;font-size:.98rem}.dl small{color:var(--mut);font-size:.78rem}
 .dl .tag{margin-left:auto;font-size:.72rem;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:2px 9px}
 .dl.done .ic{background:var(--ok)}
-.toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;pointer-events:none;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:.9rem;font-weight:600;transition:.3s;max-width:90vw}
-.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,560px);box-sizing:border-box;opacity:0;pointer-events:none;background:var(--fg);color:var(--bg);padding:14px 22px;border-radius:99px;font-size:.95rem;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .25s;z-index:60}
+.toast.on{opacity:1}
 #log{margin:8px 4px 0;font-size:.82rem;color:var(--mut);display:grid;gap:3px}
 #log .okr{color:var(--ok)}
 #log .fr{color:var(--err)}
@@ -80,6 +80,20 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 <style>
 #inst{position:fixed;right:14px;bottom:max(16px,env(safe-area-inset-bottom));z-index:50;display:none;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 18px;font:700 14px Manrope,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer}
 #inst.show{display:flex}
+</style>
+<style>
+#stat{margin:26px 0}
+#stat h2{font-family:Fraunces,serif;font-size:1.5rem;margin:0 0 6px}
+#stat p{color:var(--mut);font-size:.88rem;margin:0 0 12px;line-height:1.5}
+.sbtns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sbtns button{border:0;border-radius:99px;padding:12px 18px;font:700 14px Manrope,sans-serif;cursor:pointer;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2))}
+.sbtns button.alt{background:var(--card);color:var(--fg);border:1px solid var(--line)}
+#sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.sc{position:relative;border-radius:14px;overflow:hidden;background:var(--card);border:1px solid var(--line);aspect-ratio:9/14}
+.sc img,.sc video{width:100%;height:100%;object-fit:cover;display:block}
+.sc .sv{position:absolute;left:8px;right:8px;bottom:8px;border:0;border-radius:99px;padding:9px;font:700 13px Manrope,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));cursor:pointer}
+.sc .sv.ok{background:var(--ok)}
+.sc .bd{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;border-radius:99px;padding:3px 9px;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
@@ -103,6 +117,17 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 <div id="log"></div>
 <div class="sk" id="sk"></div>
 <div id="res"><img id="th" alt="" hidden><div class="body"><h2 id="ti"></h2><div class="meta" id="mt"></div><div class="links" id="ln"></div></div></div>
+<section id="stat">
+  <h2>WhatsApp Status Saver</h2>
+  <p>Pehle WhatsApp me status dekh lo (tabhi file phone me aati hai). Phir yahan <b>Status chuno</b> dabao aur file picker me <b>Android &gt; media &gt; com.whatsapp &gt; WhatsApp &gt; Media &gt; .Statuses</b> folder kholo. Status yahan dikhenge aur ek tap me save ho jayenge.</p>
+  <div class="sbtns">
+    <button id="spick" type="button">Status chuno</button>
+    <button id="sfolder" class="alt" type="button" hidden>Folder chuno</button>
+    <button id="sall" class="alt" type="button" hidden>Sab save karo</button>
+  </div>
+  <input id="sfile" type="file" accept="image/*,video/*" multiple hidden>
+  <div id="sgrid"></div>
+</section>
 <section id="lib" hidden>
   <div class="lh"><h2>Meri downloads</h2><small id="lsz"></small></div>
   <div class="tabs" id="tabs"></div>
@@ -124,7 +149,7 @@ const $=id=>document.getElementById(id);
 const ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
 const CHECK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const EXT={video:'mp4',audio:'mp3',image:'jpg'};
-let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+let tt;function toast(m){m=String(m).replace(/\s+/g,' ');const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
 fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{$('p').innerHTML='<option value="">Auto</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}).catch(()=>{});
 
 function startDownload(l,title,btn){Lib.download(l,title,window.curThumb||'',btn)}
@@ -199,6 +224,40 @@ const DEV={
   if(!val)return;
   const inp=document.getElementById('u');inp.value=val;
   setTimeout(()=>{try{go()}catch(e){}},300);
+})();
+</script>
+<script>
+// ---- WhatsApp Status Saver ----
+(function(){
+  const grid=document.getElementById('sgrid'),inp=document.getElementById('sfile'),all=document.getElementById('sall'),fol=document.getElementById('sfolder');
+  const seen=new Set();let saves=[];
+  function addFiles(files){
+    [...files].filter(f=>/^(image|video)\//.test(f.type)||/\.(jpe?g|png|webp|mp4|mkv|3gp)$/i.test(f.name)).forEach(f=>{
+      const key=f.name+f.size;if(seen.has(key))return;seen.add(key);
+      const isV=/^video\//.test(f.type)||/\.(mp4|mkv|3gp)$/i.test(f.name),u=URL.createObjectURL(f);
+      const c=document.createElement('div');c.className='sc';
+      c.innerHTML=(isV?`<video src="${u}#t=0.1" muted playsinline preload="metadata"></video>`:`<img src="${u}" alt="">`)+`<span class="bd">${isV?'Video':'Photo'} · ${(f.size/1048576).toFixed(1)} MB</span>`;
+      const b=document.createElement('button');b.className='sv';b.type='button';b.textContent='Save karo';
+      const run=async()=>{if(b.classList.contains('ok'))return;b.textContent='Saving...';try{await Lib.addFile(f,isV?'video':'image');b.textContent='Downloaded by US MODS';b.classList.add('ok')}catch(e){b.textContent='Retry'}};
+      b.onclick=run;saves.push(run);c.appendChild(b);
+      if(isV)c.querySelector('video').onclick=function(){this.paused?this.play():this.pause()};
+      grid.appendChild(c);
+    });
+    all.hidden=!saves.length;
+  }
+  document.getElementById('spick').onclick=()=>inp.click();
+  inp.onchange=()=>{addFiles(inp.files);inp.value=''};
+  all.onclick=async()=>{for(const r of saves)await r()};
+  if(window.showDirectoryPicker){
+    fol.hidden=false;
+    fol.onclick=async()=>{
+      try{
+        const d=await showDirectoryPicker({mode:'read'}),fs=[];
+        for await(const e of d.values())if(e.kind==='file')fs.push(await e.getFile());
+        if(!fs.length)toast('Is folder me koi file nahi mili');addFiles(fs);
+      }catch(e){if(e&&e.name!=='AbortError')toast('Folder nahi khul paya, Status chuno use karo')}
+    };
+  }
 })();
 </script>
 <button id="inst" type="button">Install App</button>

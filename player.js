@@ -45,6 +45,15 @@ async function notify(tag, title, body, o = {}) {
 function askNotify() { try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch {} }
 window.askNotify = askNotify;
 
+// WhatsApp status / local file ko library me daalo aur device me save karo
+async function addFile(file, type) {
+  const name = file.name || ('status-' + Date.now() + (type === 'video' ? '.mp4' : '.jpg'));
+  const blob = file.slice(0, file.size, file.type || MIME[type] || 'application/octet-stream');
+  saveBlob(blob, name);
+  await add({ id: Date.now() + Math.random().toString(36).slice(2, 6), title: 'WhatsApp status', type, label: 'Status', thumb: '', src: '', blob, size: blob.size, ts: Date.now(), name });
+  notify('dl-' + name, '\u2705 Downloaded by US MODS', 'WhatsApp status\nSize ' + mb(blob.size), { silent: false, renotify: true, vibrate: [120, 60, 120] });
+  window.toast && toast('Downloaded by US MODS');
+}
 async function download(l, title, thumb, btn) {
   const name = ((title || 'download').replace(/[^\w\- ]+/g, '').trim().slice(0, 50) || 'download') + '-' + l.label.replace(/[^\w]+/g, '') + '.' + (EXT[l.type] || 'mp4');
   const src = '/api/get?url=' + encodeURIComponent(l.url) + '&name=' + encodeURIComponent(name);
@@ -188,6 +197,6 @@ function imageView(it) {
   return { node: w, stop() {}, key(e) { if (e.key === '+' || e.key === '=') zoom(1.3); else if (e.key === '-') zoom(1 / 1.3); else if (e.key === '0') { s = 1; x = y = 0; r = 0; apply(); } else if (e.key === 'r') { r = (r + 90) % 360; apply(); } else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); } };
 }
 
-window.Lib = { download };
+window.Lib = { download, addFile };
 idb.then(() => tx('readonly', (s) => s.getAll())).then((a) => { items = (a || []).sort((x, y) => y.ts - x.ts); render(); }).catch(() => {});
 })();

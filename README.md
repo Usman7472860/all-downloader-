@@ -11,6 +11,8 @@ Static website + Vercel serverless functions. Koi build step nahi, koi database 
 - **Universal API v1 + v2**: har platform ke link par sabse pehle try hoti hain (dropdown me bhi selectable)
 - **Installable app (PWA)**: Chrome me "Install App" button aata hai, home screen par app ki tarah khulta hai; offline me bhi UI khulti hai
 - **Share se download**: app install karne ke baad Facebook / TikTok / YouTube / Instagram me Share dabao, list me "US MODS Downloader" chuno, link khud bhar kar download shuru ho jata hai (Android Chrome)
+- **WhatsApp Status Saver**: status file chuno, preview dekho, ek tap me save
+- **Quality labels**: 1080p / 720p / 360p sort ho kar dikhte hain
 - **Auto fallback loop**: ek API fail ho to agli try hoti hai, har step ka live message dikhta hai
 - Download par progress dikhta hai, file device me save hoti hai
 - **Library**: downloaded media browser me store hota hai (IndexedDB), All / Video / Audio / Images tabs
