@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d0c0f">
-<title>All Downloader</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="US Mood">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>US Mood Downloader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -70,11 +77,15 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 .dvl a:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 </style>
 <link rel="stylesheet" href="player.css">
+<style>
+#inst{position:fixed;right:14px;bottom:max(16px,env(safe-area-inset-bottom));z-index:50;display:none;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 18px;font:700 14px Manrope,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer}
+#inst.show{display:flex}
+</style>
 </head>
 <body>
 <main>
 <header>
-  <span class="logo"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></i>All Downloader</span>
+  <span class="logo"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></i>US Mood Downloader</span>
   <h1>Ek link.<br><em>Har platform.</em></h1>
   <p class="sub">TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud aur CapCut. Link paste karo ya song ka naam likho.</p>
 </header>
@@ -165,7 +176,7 @@ $('go').onclick=go;$('u').addEventListener('keydown',e=>{if(e.key==='Enter')go()
 const DEV={
   name:'Muhammad Usman Chachar',
   role:'Full-stack developer',
-  bio:'Salam! Main is website ka developer hoon. Mujhe aise tools banana pasand hai jo kaam asaan kar dein: ek link, ek click aur kaam ho jaye. All Downloader ko maine free APIs, Vercel aur plain JavaScript se banaya hai, taake ye tez rahe aur use karna simple ho. Koi API fail ho to agli khud try hoti hai, aur download ki hui media seedha built-in player me chal jati hai.',
+  bio:'Salam! Main is website ka developer hoon. Mujhe aise tools banana pasand hai jo kaam asaan kar dein: ek link, ek click aur kaam ho jaye. US Mood Downloader ko maine free APIs, Vercel aur plain JavaScript se banaya hai, taake ye tez rahe aur use karna simple ho. Koi API fail ho to agli khud try hoti hai, aur download ki hui media seedha built-in player me chal jati hai.',
   skills:['JavaScript','Node.js','Vercel','REST APIs','UI design'],
   links:[['WhatsApp','https://wa.me/92300XXXXXXX'],['GitHub','https://github.com/username'],['Instagram','https://instagram.com/username']]
 };
@@ -173,6 +184,23 @@ const DEV={
   $('dvn').textContent=DEV.name;$('dvr').textContent=DEV.role;$('dvb').textContent=DEV.bio;
   DEV.skills.forEach(s=>{const e=document.createElement('span');e.textContent=s;$('dvt').appendChild(e)});
   DEV.links.filter(l=>!/XXXX|\/username/.test(l[1])).forEach(([n,u])=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=n;$('dvl').appendChild(a)});
+})();
+</script>
+<button id="inst" type="button">Install App</button>
+<script>
+(function(){
+  if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+  const b=document.getElementById('inst');let ev=null;
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(standalone)return;
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;b.classList.add('show')});
+  addEventListener('appinstalled',()=>{b.classList.remove('show');ev=null});
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ios){b.classList.add('show')}
+  b.onclick=async()=>{
+    if(ev){ev.prompt();await ev.userChoice;ev=null;b.classList.remove('show')}
+    else if(ios)alert('iPhone par: Safari me Share button dabao, phir "Add to Home Screen" chuno.');
+  };
 })();
 </script>
 </body>

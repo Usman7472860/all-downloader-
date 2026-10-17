@@ -1,4 +1,4 @@
-# All Downloader
+# US Mood Downloader
 
 Ek link paste karo, website platform khud pehchan leti hai aur download links nikalti hai. Download ke baad file neeche **library** me aa jati hai, jahan se built-in player me chala sakte ho.
 
@@ -8,6 +8,8 @@ Static website + Vercel serverless functions. Koi build step nahi, koi database 
 
 - TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud, CapCut
 - Song ka naam likho to audio (YouTube / Spotify search) mil jata hai
+- **Universal API v1 + v2**: har platform ke link par sabse pehle try hoti hain (dropdown me bhi selectable)
+- **Installable app (PWA)**: Chrome me "Install App" button aata hai, home screen par app ki tarah khulta hai; offline me bhi UI khulti hai
 - **Auto fallback loop**: ek API fail ho to agli try hoti hai, har step ka live message dikhta hai
 - Download par progress dikhta hai, file device me save hoti hai
 - **Library**: downloaded media browser me store hota hai (IndexedDB), All / Video / Audio / Images tabs
@@ -20,6 +22,7 @@ Static website + Vercel serverless functions. Koi build step nahi, koi database 
 index.html     UI, link input, API loop
 player.js      library + video/audio player + image viewer
 player.css     library aur player ki styling
+manifest.webmanifest, sw.js, icons/  PWA (install support)
 developer.jpg  About section ki photo (index.html me DEV object se naam, bio, links badlo)
 api/dl.js      providers (downloader APIs) + proxy
 api/get.js     file ko attachment bana kar stream karta hai
