@@ -175,6 +175,25 @@ P['fb-getfvid'] = { name: 'Facebook (GetFVid)', plat: 'facebook', run: async (u)
   return out(h.match(/<title>([^<]+)/)?.[1] || 'Facebook video', '', links.map((x, i) => L('Link ' + (i + 1), x, 'video')));
 } };
 
+// ---- Universal providers (v1, v2): kisi bhi platform ke link par chalte hain (plat: 'any') ----
+const uSweep = (json, src) => {
+  const s = sweep(json), seen = new Set();
+  s.links = s.links.filter((l) => l.type !== 'image' && !/thumb|cover|poster|avatar|profile|preview/i.test(l.label)
+    && l.url !== src && !seen.has(l.url) && seen.add(l.url));
+  if (!s.links.length) throw 'no links';
+  s.title = s.title || json?.data?.title || json?.result?.title || '';
+  return s;
+};
+P['all-v1'] = { name: 'All Downloader API v1', plat: 'any', run: async (u) =>
+  uSweep(await get(`https://fak-media-downloaders.jokerkeep057.workers.dev/dl/?url=${q(u)}`), u) };
+P['all-v2'] = { name: 'All Downloader API v2', plat: 'any', run: async (u) =>
+  uSweep(await get(`https://multidownapi.vercel.app/?url=${q(u)}`), u) };
+
+// platform ke liye providers: universal v1/v2 pehle, phir platform wale
+const idsFor = (plat) => Object.keys(P)
+  .filter((k) => P[k].plat === plat || (P[k].plat === 'any' && plat !== 'search'))
+  .sort((a, b) => (P[b].plat === 'any') - (P[a].plat === 'any'));
+
 const detect = (u) =>
   /tiktok\.com/.test(u) ? 'tiktok' : /instagram\.com/.test(u) ? 'instagram' : /pinterest\.|pin\.it/.test(u) ? 'pinterest'
   : /soundcloud\.com/.test(u) ? 'soundcloud' : /youtu\.?be/.test(u) ? 'youtube' : /facebook\.com|fb\.watch/.test(u) ? 'facebook'
@@ -186,8 +205,8 @@ export default async function handler(req, res) {
   if (list) return res.json(Object.entries(P).map(([id, v]) => ({ id, name: v.name, plat: v.plat })));
   if (!url) return res.status(400).json({ ok: false, error: 'url missing' });
   const plat = detect(url);
-  if (order) return res.json({ platform: plat, ids: Object.keys(P).filter((k) => P[k].plat === plat).map((id) => ({ id, name: P[id].name })) });
-  const ids = p && P[p] ? [p] : Object.keys(P).filter((k) => P[k].plat === plat);
+  if (order) return res.json({ platform: plat, ids: idsFor(plat).map((id) => ({ id, name: P[id].name })) });
+  const ids = p && P[p] ? [p] : idsFor(plat);
   const errors = [];
   // run all providers for this platform in parallel; first one with links wins (avoids Vercel function timeout)
   const jobs = ids.map((id) =>
