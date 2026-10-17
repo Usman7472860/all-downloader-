@@ -99,7 +99,7 @@ async function remove(id) { const i = items.find((x) => x.id === id); if (i && i
 
 // ---------- library UI ----------
 function render() {
-  const lib = $('#lib'); lib.hidden = !items.length; if (!items.length) return;
+  const lib = $('#lib'); lib.hidden = !items.length; const cd = document.getElementById('cDl'); if (cd) cd.textContent = items.length; const de = document.getElementById('dlEmpty'); if (de) de.hidden = !!items.length; if (!items.length) return;
   const cnt = (t) => t === 'all' ? items.length : items.filter((i) => i.type === t).length;
   const tabs = $('#tabs'); tabs.innerHTML = '';
   [['all', 'All'], ['video', 'Video'], ['audio', 'Audio'], ['image', 'Images']].forEach(([k, n]) => { if (k !== 'all' && !cnt(k)) return; const b = el('button', k === filter ? 'on' : '', `${n} ${cnt(k)}`); b.onclick = () => { filter = k; render(); }; tabs.append(b); });
