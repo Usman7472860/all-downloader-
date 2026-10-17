@@ -8,15 +8,36 @@ const clean = (u) => (typeof u === 'string' ? u.replace(/\\\//g, '/').replace(/&
 const L = (label, url, type) => (url ? { label, url: clean(url), type } : null);
 const out = (title, thumb, links) => ({ title: title || '', thumb: thumb || '', links: links.filter(Boolean) });
 
-// Fallback: collect every URL found in an unknown JSON shape.
+// Fallback: collect every URL found in an unknown JSON shape, with quality info from sibling fields.
+const QK = /^(quality|resolution|res|label|format|height|definition|qualityLabel|text|name|size_label)$/i;
+const heightOf = (str) => { const m = String(str || '').match(/(\d{3,4})\s*p\b|\b(\d{3,4})x(\d{3,4})|(?:^|[^\d])(2160|1440|1080|720|480|360|240|144)(?!\d)/i); return m ? +(m[1] || m[3] || m[4]) : 0; };
 function sweep(json) {
   const found = [];
-  (function walk(v, k) {
-    if (typeof v === 'string' && /^https?:\/\//.test(v)) found.push([k || 'link', v]);
-    else if (v && typeof v === 'object') for (const [kk, vv] of Object.entries(v)) walk(vv, kk);
+  (function walk(v, k, parent) {
+    if (typeof v === 'string' && /^https?:\/\//.test(v)) {
+      let ctx = '';
+      if (parent && !Array.isArray(parent)) for (const [pk, pv] of Object.entries(parent)) if (QK.test(pk) && (typeof pv === 'string' || typeof pv === 'number')) ctx += ' ' + pv;
+      found.push([k || 'link', v, ctx.trim()]);
+    } else if (v && typeof v === 'object') for (const [kk, vv] of Object.entries(v)) walk(vv, Array.isArray(v) ? k : kk, v);
   })(json);
-  const type = (u) => (/\.(mp3|m4a|opus)|audio/i.test(u) ? 'audio' : /\.(jpe?g|png|webp)/i.test(u) ? 'image' : 'video');
-  return out(json?.title || json?.result?.title, '', found.map(([k, u]) => L(k, u, type(u))));
+  const type = (u, k) => (/\.(mp3|m4a|opus|aac|wav)|audio|music|mp3/i.test(u + ' ' + k) ? 'audio' : /\.(jpe?g|png|webp)|image|photo/i.test(u) ? 'image' : 'video');
+  return out(json?.title || json?.result?.title || json?.data?.title, '', found.map(([k, u, ctx]) => {
+    const t = type(u, k), h = heightOf(ctx) || heightOf(k) || heightOf(u);
+    const label = h ? h + 'p' : (ctx && ctx.length < 18 ? ctx : k);
+    return L(label, u, t);
+  }));
+}
+
+// Result ko saaf karo: label normalize (1080p / HD / SD), duplicate hatao, badi quality pehle.
+const rank = (l) => { if (l.type === 'audio') return -1; const h = heightOf(l.label); if (h) return h; if (/^hd|best|high/i.test(l.label)) return 720; if (/^sd|low/i.test(l.label)) return 360; return 1; };
+function polish(r) {
+  const seen = new Set();
+  r.links = r.links.filter((l) => !seen.has(l.url) && seen.add(l.url)).map((l) => {
+    const h = heightOf(l.label);
+    return { ...l, label: h && /^\d{3,4}$/.test(l.label.trim()) ? h + 'p' : l.label };
+  });
+  r.links = r.links.map((l, i) => ({ l, i })).sort((a, b) => rank(b.l) - rank(a.l) || a.i - b.i).map((x) => x.l);
+  return r;
 }
 
 const get = async (u, o) => (await fetch(u, { headers: UA, ...o })).json();
@@ -215,7 +236,7 @@ export default async function handler(req, res) {
       .catch((e) => { errors.push(id + ': ' + (e?.message || e || 'failed')); throw e; }));
   try {
     const { id, r } = await Promise.any(jobs);
-    return res.json({ ok: true, provider: P[id].name, platform: plat, ...r });
+    return res.json({ ok: true, provider: P[id].name, platform: plat, ...polish(r) });
   } catch {
     return res.status(502).json({ ok: false, error: 'Sab APIs fail ho gayi ya link galat hai', tried: errors });
   }
