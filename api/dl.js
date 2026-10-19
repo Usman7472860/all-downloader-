@@ -40,7 +40,7 @@ function polish(r) {
   return r;
 }
 
-const get = async (u, o) => (await fetch(u, { headers: UA, ...o })).json();
+const get = async (u, o) => { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(14000), ...o }); if (!r.ok && r.status >= 500) throw 'HTTP ' + r.status; return r.json(); };
 const q = encodeURIComponent;
 
 const P = {
@@ -210,19 +210,159 @@ P['all-v1'] = { name: 'All Downloader API v1', plat: 'any', run: async (u) =>
 P['all-v2'] = { name: 'All Downloader API v2', plat: 'any', run: async (u) =>
   uSweep(await get(`https://multidownapi.vercel.app/?url=${q(u)}`), u) };
 
+// ---- Naye providers: btch backend (generic), plus direct APIs (plugin files se nikale) ----
+const BT = 'https://backend1.tioo.eu.org';
+const NEOXR = process.env.NEOXR_KEY || 'Milik-Bot-DeniaMD';
+[
+  ['bt-aio', 'All-in-one (Btch)', 'any', 'aio'],
+  ['bt-tiktok', 'TikTok (Btch)', 'tiktok', 'ttdl'], ['bt-instagram', 'Instagram (Btch)', 'instagram', 'igdl'],
+  ['bt-facebook', 'Facebook (Btch)', 'facebook', 'fbdown'], ['bt-twitter', 'Twitter/X (Btch)', 'twitter', 'twitter'],
+  ['bt-youtube', 'YouTube (Btch)', 'youtube', 'youtube'], ['bt-pinterest', 'Pinterest (Btch)', 'pinterest', 'pinterest'],
+  ['bt-soundcloud', 'SoundCloud (Btch)', 'soundcloud', 'soundcloud'], ['bt-capcut', 'CapCut (Btch)', 'capcut', 'capcut'],
+  ['bt-cocofun', 'CocoFun (Btch)', 'cocofun', 'cocofun'], ['bt-snack', 'SnackVideo (Btch)', 'snackvideo', 'snackvideo'],
+  ['bt-mediafire', 'MediaFire (Btch)', 'mediafire', 'mediafire'], ['bt-rednote', 'RedNote (Btch)', 'rednote', 'rednote'],
+  ['bt-threads', 'Threads (Btch)', 'threads', 'threads'], ['bt-douyin', 'Douyin (Btch)', 'douyin', 'douyin'],
+  ['bt-kuaishou', 'Kuaishou (Btch)', 'kuaishou', 'kuaishou'], ['bt-gdrive', 'Google Drive (Btch)', 'gdrive', 'gdrive'],
+  ['bt-spotify', 'Spotify (Btch)', 'spotify', 'spotify'],
+].forEach(([id, name, plat, ep]) => { P[id] = { name, plat, run: async (u) => uSweep(await get(`${BT}/${ep}?url=${q(u)}`), u) }; });
+
+P['azbry-douyin'] = { name: 'Douyin (Azbry)', plat: 'douyin', run: async (u) => {
+  const j = await get(`https://api.azbry.com/api/downloader/douyin?url=${q(u)}`);
+  if (!j.status || !j.result) throw 0;
+  return out(j.result.title, j.result.cover, [L('Video', j.result.video, 'video'), L('Audio', j.result.audio, 'audio')]);
+} };
+P['nexray-spotify-dl'] = { name: 'Spotify (Nexray)', plat: 'spotify', run: async (u) => {
+  const j = await get(`https://api.nexray.eu.cc/downloader/spotify?url=${q(u)}`);
+  if (!j.status || !j.result?.url) throw 0;
+  return out(`${j.result.title || ''} - ${j.result.artist || ''}`, j.result.thumbnail, [L('MP3', j.result.url, 'audio')]);
+} };
+P['kyzz-alight'] = { name: 'Alight Motion (Kyzz)', plat: 'alightmotion', run: async (u) => {
+  const j = await get(`https://kyzznekoo.zone.id/api/alightmotion/download?url=${q(u)}`);
+  if (!j.status || !j.data?.url) throw 0;
+  return out('Alight Motion preset', '', [L('Project ZIP', j.data.url, 'file')]);
+} };
+P['threads-worker'] = { name: 'Threads (Worker)', plat: 'threads', run: async (u) => {
+  const j = await get(`https://workers-playground-cool-wood-c008.accoutydusra.workers.dev/?url=${q(u)}&action=info`, { headers: { ...UA, origin: 'https://threadsvid.com', referer: 'https://threadsvid.com/' } });
+  const d = j.data || {}; if (!j.success) throw 0;
+  return out(d.title || d.description || 'Threads post', '', [
+    ...(d.video?.qualities || []).map((v) => L(v.quality || 'Video', v.url, 'video')),
+    ...(d.images?.urls || []).map((v, i) => L('Photo ' + (i + 1), v.url, 'image'))]);
+} };
+P['shopee-nowm'] = { name: 'Shopee (NoWatermark)', plat: 'shopee', run: async (u) => {
+  const fd = new FormData(); fd.append('url', u);
+  const j = await (await fetch('https://shopeenowatermark.com/api/extract', { method: 'POST', body: fd })).json();
+  if (!j.success || !j.streams_array?.length) throw 0;
+  return out(j.username || 'Shopee video', '', j.streams_array.map((s) => L(heightOf(s.quality) ? heightOf(s.quality) + 'p' + (/H265/.test(s.quality) ? ' (H265)' : '') : s.quality, s.stream_url, 'video')));
+} };
+P['sfile-neoxr'] = { name: 'Sfile (Neoxr)', plat: 'sfile', run: async (u) => {
+  const j = await get(`https://api.neoxr.eu/api/sfile?url=${q(u)}&apikey=${q(NEOXR)}`);
+  if (!j.data?.url) throw 0;
+  return out(j.data.filename || 'Sfile', '', [L(j.data.size || 'File', j.data.url, 'file')]);
+} };
+P['pixeldrain-direct'] = { name: 'Pixeldrain (direct)', plat: 'pixeldrain', run: async (u) => {
+  const id = u.match(/pixeldrain\.(?:com|net)\/(?:u|api\/file)\/([A-Za-z0-9]+)/)?.[1]; if (!id) throw 'bad link';
+  const j = await get(`https://pixeldrain.com/api/file/${id}/info`);
+  if (!j.success) throw 0;
+  return out(j.name, '', [L(j.size ? (j.size / 1048576).toFixed(1) + ' MB' : 'File', `https://pixeldrain.com/api/file/${id}?download`, 'file')]);
+} };
+P['pixeldrain-neoxr'] = { name: 'Pixeldrain (Neoxr)', plat: 'pixeldrain', run: async (u) => {
+  const j = await get(`https://api.neoxr.eu/api/pixeldrain?url=${q(u)}&apikey=${q(NEOXR)}`);
+  if (!j.data?.url) throw 0;
+  return out(j.data.filename, '', [L(j.data.size || 'File', j.data.url, 'file')]);
+} };
+P['github-zip'] = { name: 'GitHub repo ZIP', plat: 'github', run: async (u) => {
+  const m = u.match(/github\.com\/([^/\s]+)\/([^/\s?#]+)/i); if (!m) throw 'bad link';
+  const repo = m[2].replace(/\.git$/, ''), br = u.match(/\/tree\/([^/?#]+)/)?.[1];
+  const j = await get(`https://api.github.com/repos/${m[1]}/${repo}`); if (!j.default_branch) throw 'repo not found';
+  return out(`${m[1]}/${repo}`, j.owner?.avatar_url, [L('ZIP (' + (br || j.default_branch) + ')', `https://github.com/${m[1]}/${repo}/archive/refs/heads/${br || j.default_branch}.zip`, 'file')]);
+} };
+
+// ---- Round 2: TikTok (tikwm POST, savett), Videy, YouTube (izuka, Piped, Invidious, search) ----
+P['tikwm-post'] = { name: 'TikTok (TikWM v2, photos too)', plat: 'tiktok', run: async (u) => {
+  const j = await (await fetch('https://www.tikwm.com/api/', { method: 'POST', signal: AbortSignal.timeout(14000), headers: { ...UA, 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8', origin: 'https://www.tikwm.com', referer: 'https://www.tikwm.com/', 'x-requested-with': 'XMLHttpRequest' }, body: new URLSearchParams({ url: u, count: 12, cursor: 0, web: 1, hd: 1 }) })).json();
+  const d = j.data; if (!d) throw 0;
+  const f = (x) => (x && x.startsWith('/') ? 'https://www.tikwm.com' + x : x);
+  return out(d.title, f(d.cover), [L('HD', f(d.hdplay), 'video'), L('No watermark', f(d.play), 'video'), L('Watermark', f(d.wmplay), 'video'),
+    ...(d.images || []).map((x, i) => L('Photo ' + (i + 1), x, 'image')), L('Music', f(d.music || d.music_info?.play), 'audio')]);
+} };
+P['savett-tiktok'] = { name: 'TikTok (Savett)', plat: 'tiktok', run: async (u) => {
+  const H = { 'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/139.0.0.0 Mobile Safari/537.36', 'content-type': 'application/x-www-form-urlencoded', origin: 'https://savett.cc', referer: 'https://savett.cc/en1/download' };
+  const g = await fetch('https://savett.cc/en1/download', { headers: H, signal: AbortSignal.timeout(10000) });
+  const csrf = (await g.text()).match(/name="csrf_token" value="([^"]+)"/)?.[1]; if (!csrf) throw 'no csrf';
+  const cookie = (g.headers.getSetCookie?.() || []).map((c) => c.split(';')[0]).join('; ');
+  const h = await (await fetch('https://savett.cc/en1/download', { method: 'POST', headers: { ...H, cookie }, body: `csrf_token=${q(csrf)}&url=${q(u)}`, signal: AbortSignal.timeout(14000) })).text();
+  const parse = (s) => { try { return JSON.parse(s.replace(/&quot;/g, '"')); } catch { return null; } };
+  const links = [];
+  for (const m of h.matchAll(/<[^>]*carousel-item[^>]*data-data="([^"]+)"/g)) (parse(m[1])?.URL || []).forEach((x, i) => links.push(L('Photo ' + (links.length + 1), x, 'image')));
+  for (const m of h.matchAll(/<option[^>]*value="([^"]+)"[^>]*>([^<]*)</g)) {
+    const lb = m[2].trim(), js = parse(m[1]); if (!js?.URL) continue;
+    const t = /mp3/i.test(lb) ? 'audio' : 'video';
+    js.URL.forEach((x) => links.push(L(/watermark/i.test(lb) && !/no/i.test(lb) ? 'Watermark' : t === 'audio' ? 'MP3' : 'No watermark', x, t)));
+  }
+  if (!links.length) throw 'no links';
+  return out(h.match(/<h3[^>]*>([^<]+)</)?.[1]?.trim() || 'TikTok', '', links);
+} };
+P['videy-direct'] = { name: 'Videy (direct)', plat: 'videy', run: async (u) => {
+  const id = u.match(/[?&]id=([A-Za-z0-9]+)/)?.[1] || u.match(/videy\.co\/(?:v\/)?([A-Za-z0-9]+)\/?$/)?.[1]; if (!id) throw 'bad link';
+  const ext = id.length === 9 && id.endsWith('2') ? 'mov' : 'mp4';
+  const url = `https://cdn.videy.co/${id}.${ext}`;
+  if (!(await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) })).ok) throw 'not found';
+  return out('Videy ' + id, '', [L('Video', url, 'video')]);
+} };
+P['videy-neoxr'] = { name: 'Videy (Neoxr)', plat: 'videy', run: async (u) => {
+  const j = await get(`https://api.neoxr.eu/api/videy?url=${q(u)}&apikey=${q(NEOXR)}`);
+  if (!j.status || !j.data?.url) throw 0;
+  return out('Videy', '', [L('Video', j.data.url, 'video')]);
+} };
+P['izuka-ytmp3'] = { name: 'YouTube MP3 (Izuka)', plat: 'youtube', run: async (u) => {
+  const j = await get(`https://my.izuka-api.xyz/api/downloader/ytmp3?url=${q(u)}`);
+  if (!j.result?.download_url) throw 0;
+  return out(j.result.title, j.result.thumbnail, [L('MP3', j.result.download_url, 'audio')]);
+} };
+const ytId = (u) => u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/)?.[1];
+const PIPED = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de'], INV = ['https://inv.nadeko.net', 'https://invidious.nerdvpn.de'];
+async function ytStreams(id) {
+  const jobs = [
+    ...PIPED.map((b) => get(`${b}/streams/${id}`).then((d) => {
+      const v = (d.videoStreams || []).filter((x) => x.url && x.videoOnly === false && /^video\/mp4/i.test(x.mimeType || ''));
+      const a = (d.audioStreams || []).filter((x) => x.url).sort((x, y) => (y.bitrate || 0) - (x.bitrate || 0));
+      const links = [...v.map((x) => L(x.quality || 'MP4', x.url, 'video')), L('Audio', a[0]?.url, 'audio')].filter(Boolean);
+      if (!links.length) throw 0; return out(d.title, d.thumbnailUrl, links);
+    })),
+    ...INV.map((b) => get(`${b}/api/v1/videos/${id}?local=true`).then((d) => {
+      const v = (d.formatStreams || []).filter((x) => x.url && /mp4/i.test(x.type || ''));
+      if (!v.length) throw 0; return out(d.title, d.videoThumbnails?.[0]?.url, v.map((x) => L(x.qualityLabel || x.resolution || 'MP4', x.url, 'video')));
+    })),
+  ];
+  return Promise.any(jobs);
+}
+P['yt-piped'] = { name: 'YouTube (Piped/Invidious)', plat: 'youtube', run: async (u) => { const id = ytId(u); if (!id) throw 'bad link'; return ytStreams(id); } };
+P['yt-search-play'] = { name: 'YouTube search to video (Piped)', plat: 'search', run: async (u) => {
+  const r = await (await fetch('https://www.youtube.com/youtubei/v1/search?prettyPrint=false', { method: 'POST', signal: AbortSignal.timeout(10000), headers: { 'content-type': 'application/json', ...UA }, body: JSON.stringify({ context: { client: { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'en' } }, query: u, params: 'EgIQAQ%3D%3D' }) })).json();
+  const id = JSON.stringify(r).match(/"videoId":"([\w-]{11})"/)?.[1]; if (!id) throw 'no result';
+  return ytStreams(id);
+} };
+
 // platform ke liye providers: universal v1/v2 pehle, phir platform wale
 const idsFor = (plat) => Object.keys(P)
   .filter((k) => P[k].plat === plat || (P[k].plat === 'any' && plat !== 'search'))
   .sort((a, b) => (P[b].plat === 'any') - (P[a].plat === 'any'));
 
-const detect = (u) =>
-  /tiktok\.com/.test(u) ? 'tiktok' : /instagram\.com/.test(u) ? 'instagram' : /pinterest\.|pin\.it/.test(u) ? 'pinterest'
-  : /soundcloud\.com/.test(u) ? 'soundcloud' : /youtu\.?be/.test(u) ? 'youtube' : /facebook\.com|fb\.watch/.test(u) ? 'facebook'
-  : /capcut\.com/.test(u) ? 'capcut' : 'search';
+const detect = (u) => {
+  const R = [['tiktok', /tiktok\.com/], ['instagram', /instagram\.com/], ['pinterest', /pinterest\.|pin\.it/], ['soundcloud', /soundcloud\.com/],
+    ['youtube', /youtu\.?be/], ['facebook', /facebook\.com|fb\.watch|fb\.com/], ['capcut', /capcut\.com/], ['twitter', /(twitter|x)\.com\//],
+    ['threads', /threads\.(net|com)/], ['spotify', /open\.spotify\.com\/track/], ['douyin', /douyin\.com/], ['kuaishou', /kuaishou\.com/],
+    ['cocofun', /cocofun\.com/], ['snackvideo', /snackvideo\.com/], ['mediafire', /mediafire\.com/], ['rednote', /xiaohongshu\.com|xhslink\.com/],
+    ['shopee', /shopee\./], ['videy', /videy\.co/], ['sfile', /sfile\.(mobi|co)/], ['pixeldrain', /pixeldrain\.(com|net)/], ['github', /github\.com\/[^/]+\/[^/]+/],
+    ['alightmotion', /alight\.link|alightmotion/], ['gdrive', /drive\.google\.com/]];
+  for (const [k, re] of R) if (re.test(u)) return k;
+  return /^https?:\/\//i.test(u) ? 'other' : 'search';
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  const { p, url, list, order } = req.query;
+  const { p, list, order } = req.query;
+  const raw = String(req.query.url || '').trim(), url = raw.match(/https?:\/\/[^\s<>"']+/)?.[0] || raw;
   if (list) return res.json(Object.entries(P).map(([id, v]) => ({ id, name: v.name, plat: v.plat })));
   if (!url) return res.status(400).json({ ok: false, error: 'url missing' });
   const plat = detect(url);
