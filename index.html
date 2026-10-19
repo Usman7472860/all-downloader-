@@ -72,7 +72,7 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 #about h2{font:700 1.4rem Fraunces,Georgia,serif;margin:0}
 #about .role{margin:2px 0 0;color:var(--gold);font-weight:700;font-size:.9rem}
 #about .bio{margin:16px 0 0;color:var(--fg);opacity:.9}
-.tags{display:flex;flex-wrap:gap:6px;margin-top:14px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .tags span{font-size:.78rem;border:1px solid var(--line);border-radius:99px;padding:4px 11px;color:var(--mut)}
 .dvl{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .dvl a{font:700 .85rem Manrope,sans-serif;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:9px 16px;border-radius:12px}
@@ -217,7 +217,7 @@ h1 em{background-size:200% 100%;animation:shine 6s ease-in-out infinite alternat
   <div id="simLog" style="margin-top: 15px; font-size: 0.85rem; color: var(--mut); display: grid; gap: 5px;"></div>
 </div>
 
-<!-- RESULTS AREA (Shared for both) -->
+<!-- RESULTS AREA -->
 <div id="simRes" style="display: none; margin-top: 18px; border-radius: 20px; overflow: hidden; background: var(--card); border: 1px solid var(--line); backdrop-filter: blur(14px);">
     <div class="body" id="simBody"></div>
 </div>
@@ -330,34 +330,30 @@ const DEV={
   DEV.links.filter(l=>!/XXXX|\/username/.test(l[1])).forEach(([n,u])=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=n;$('dvl').appendChild(a)});
 })();
 
-// ---- ADVANCED SMART SIM DATABASE LOGIC ----
+// ---- ULTRA CLEAN SIM DATABASE LOGIC ----
 (function() {
     const trueGo = $('trueGo');
     const trueNum = $('trueNum');
     const trueLog = $('trueLog');
-    
     const simGo = $('simGo');
     const simNum = $('simNum');
     const simLog = $('simLog');
-    
     const simRes = $('simRes');
     const simBody = $('simBody');
 
-    // Utility: Format for Truecaller (Must be 92...)
-    function formatTruecaller(num) {
-        let n = num.replace(/\D/g, '');
+    // Utility: Truecaller expects 923...
+    function cleanForTruecaller(num) {
+        let n = num.replace(/\s+/g, '').replace(/\D/g, ''); // Remove spaces and all non-digits
         if (n.startsWith('0')) n = '92' + n.slice(1);
-        else if (n.startsWith('92')) { /* correct */ }
-        else if (n.length === 10) n = '92' + n;
+        else if (!n.startsWith('92') && n.length === 10) n = '92' + n;
         return n;
     }
 
-    // Utility: Format for SIM DB (Must be 03...)
-    function formatSimDB(num) {
-        let n = num.replace(/\D/g, '');
+    // Utility: SIM DB expects 03...
+    function cleanForSimDB(num) {
+        let n = num.replace(/\s+/g, '').replace(/\D/g, ''); // Remove spaces and all non-digits
         if (n.startsWith('92')) n = '0' + n.slice(2);
-        else if (n.startsWith('0')) { /* correct */ }
-        else if (n.length === 10) n = '0' + n;
+        else if (!n.startsWith('0') && n.length === 10) n = '0' + n;
         return n;
     }
 
@@ -369,14 +365,13 @@ const DEV={
                 const name = data.name || data.fullName || data.Full_Name || "Not found";
                 const cnic = data.cnic || data.CNIC || data.IdCard || "Not found";
                 const address = data.address || data.Address || data.location || "Not found";
-                const finalNum = rawNum;
 
                 const cardId = `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                 const container = document.createElement('div');
                 container.style = "margin-bottom: 30px;";
                 container.innerHTML = `
                     <div class="premium-card" id="${cardId}">
-                        <div class="info-row"><span class="info-label">NUMBER</span><span class="info-value">${finalNum}</span></div>
+                        <div class="info-row"><span class="info-label">NUMBER</span><span class="info-value">${rawNum}</span></div>
                         <div class="info-row"><span class="info-label">NAME</span><span class="info-value">${name}</span></div>
                         <div class="info-row"><span class="info-label">CNIC</span><span class="info-value">${cnic}</span></div>
                         <div class="info-row"><span class="info-label">ADDRESS</span><span class="info-value">${address}</span></div>
@@ -384,7 +379,7 @@ const DEV={
                     </div>
                     <div class="card-actions">
                         <button class="action-btn" onclick="saveCardImage('${cardId}')">💾 Save Image</button>
-                        <button class="action-btn" onclick="shareCardData('${finalNum}', '${name}', '${cnic}', '${address}')">📤 Share</button>
+                        <button class="action-btn" onclick="shareCardData('${rawNum}', '${name}', '${cnic}', '${address}')">📤 Share</button>
                     </div>
                 `;
                 simBody.appendChild(container);
@@ -394,20 +389,16 @@ const DEV={
         return false;
     }
 
-    // Truecaller Search Action
     async function searchTrue() {
         let raw = trueNum.value.trim();
         if (!raw) return toast('Number enter karein boss!');
-        let formatted = formatTruecaller(raw);
-        
+        let formatted = cleanForTruecaller(raw);
         trueGo.disabled = true;
         simRes.style.display = 'none';
         simBody.innerHTML = '';
         trueLog.innerHTML = 'Searching Truecaller...';
-
         const api = { name: 'Truecaller DB', url: `https://faisal-ali-truecaller.ftgmhacks.workers.dev/?key=pak-digital.store&number=` };
         const success = await processData(formatted, raw, api);
-        
         if (success) {
             simRes.style.display = 'block';
             trueLog.innerHTML = `<span style="color: var(--ok)">✓ Data Found!</span>`;
@@ -417,22 +408,18 @@ const DEV={
         trueGo.disabled = false;
     }
 
-    // SIM DB Search Action
     async function searchSim() {
         let raw = simNum.value.trim();
         if (!raw) return toast('Number enter karein boss!');
-        let formatted = formatSimDB(raw);
-        
+        let formatted = cleanForSimDB(raw);
         simGo.disabled = true;
         simRes.style.display = 'none';
         simBody.innerHTML = '';
         simLog.innerHTML = '';
-
         const apis = [
             { name: 'SIM DB 1', url: `https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=` },
             { name: 'SIM DB 2', url: `https://simdbapi.zhhtools.workers.dev/?num=` }
         ];
-
         let foundAny = false;
         for (const api of apis) {
             const row = document.createElement('div');
