@@ -300,7 +300,7 @@ async function go(){
       $('st').textContent=`API ${n} try ho rahi hai: ${name}`;
       const row=document.createElement('div');row.textContent=`... ${n} ${name} try ho rahi hai`;$('log').appendChild(row);
       let why='';
-      try{
+      try {
         const j=await (await fetch('/api/dl?url='+enc+'&p='+id)).json();
         if(j.ok){row.textContent=`OK ${n} ${name} se link mil gaya`;row.className='okr';render(j);done=true;break}
         why=((j.tried&&j.tried[0])||j.error||'').split(': ').slice(1).join(': ')||j.error||'';
@@ -330,7 +330,7 @@ const DEV={
   DEV.links.filter(l=>!/XXXX|\/username/.test(l[1])).forEach(([n,u])=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=n;$('dvl').appendChild(a)});
 })();
 
-// ---- ULTIMATE CLEAN SIM DATABASE LOGIC ----
+// ---- FIXED & FLEXIBLE SIM DATABASE LOGIC ----
 (function() {
     const trueGo = $('trueGo');
     const trueNum = $('trueNum');
@@ -341,26 +341,30 @@ const DEV={
     const simRes = $('simRes');
     const simBody = $('simBody');
 
-    // Utility: Truecaller needs 92...
-    function cleanForTruecaller(num) {
-        let n = num.replace(/\s+/g, '').replace(/\D/g, ''); 
-        if (n.startsWith('0')) n = '92' + n.slice(1);
-        else if (n.startsWith('+')) n = n.replace('+', '');
-        if (!n.startsWith('92') && n.length === 10) n = '92' + n;
+    function cleanNumber(num) {
+        return num.replace(/\s+/g, '').replace(/\D/g, '');
+    }
+
+    function formatTruecaller(num) {
+        let n = cleanNumber(num);
+        if (n.startsWith('0')) return '92' + n.slice(1);
+        if (n.startsWith('92')) return n;
+        if (n.length === 10) return '92' + n;
         return n;
     }
 
-    // Utility: SIM DB needs 03...
-    function cleanForSimDB(num) {
-        let n = num.replace(/\s+/g, '').replace(/\D/g, ''); 
-        if (n.startsWith('92')) n = '0' + n.slice(2);
-        else if (!n.startsWith('0') && n.length === 10) n = '0' + n;
+    function formatSimDB(num) {
+        let n = cleanNumber(num);
+        if (n.startsWith('92')) return '0' + n.slice(2);
+        if (n.startsWith('0')) return n;
+        if (n.length === 10) return '0' + n;
         return n;
     }
 
     async function processData(num, rawNum, apiName) {
         try {
             const response = await fetch(apiName.url + num);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             if (data && Object.keys(data).length > 0 && (data.name || data.fullName || data.address || data.cnic)) {
                 const name = data.name || data.fullName || data.Full_Name || "Not found";
@@ -386,14 +390,17 @@ const DEV={
                 simBody.appendChild(container);
                 return true;
             }
-        } catch (e) { return false; }
+        } catch (e) { 
+            console.error("API Error:", e);
+            return false; 
+        }
         return false;
     }
 
     async function searchTrue() {
         let raw = trueNum.value.trim();
         if (!raw) return toast('Number enter karein boss!');
-        let formatted = cleanForTruecaller(raw);
+        let formatted = formatTruecaller(raw);
         trueGo.disabled = true;
         simRes.style.display = 'none';
         simBody.innerHTML = '';
@@ -412,7 +419,7 @@ const DEV={
     async function searchSim() {
         let raw = simNum.value.trim();
         if (!raw) return toast('Number enter karein boss!');
-        let formatted = cleanForSimDB(raw);
+        let formatted = formatSimDB(raw);
         simGo.disabled = true;
         simRes.style.display = 'none';
         simBody.innerHTML = '';
