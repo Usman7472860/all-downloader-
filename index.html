@@ -76,6 +76,20 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 .dvl{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .dvl a{font:700 .85rem Manrope,sans-serif;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:9px 16px;border-radius:12px}
 .dvl a:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+
+/* ---- UI polish ---- */
+h1 em{background-size:200% 100%;animation:shine 6s ease-in-out infinite alternate}
+@keyframes shine{to{background-position:100% 0}}
+.box{box-shadow:0 18px 50px -20px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--gold) 14%,transparent);transition:box-shadow .25s}
+.box:focus-within{box-shadow:0 18px 60px -18px color-mix(in srgb,var(--gold) 45%,transparent),0 0 0 1.5px var(--gold)}
+.chip{transition:transform .18s,border-color .18s,color .18s}.chip:hover{transform:translateY(-2px);border-color:var(--gold);color:var(--fg)}
+.dl{transition:transform .15s,border-color .15s,background .15s}.dl:hover{transform:translateY(-2px);border-color:var(--gold)}.dl:active{transform:scale(.98)}
+.go{transition:transform .15s,filter .15s}.go:hover{filter:brightness(1.08);transform:translateY(-1px)}.go:active{transform:scale(.97)}
+.pst{border:1px solid var(--line);background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--fg);font:600 .85rem Manrope,sans-serif;border-radius:12px;padding:0 14px;cursor:pointer}
+.pst:hover{border-color:var(--gold)}
+#res{animation:rise .35s ease both}@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+.foot{margin:34px 2px 18px;text-align:center;color:var(--mut);font-size:.82rem}.foot b{color:var(--gold)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <link rel="stylesheet" href="player.css">
 <style>
@@ -110,17 +124,17 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
 <header>
   <span class="logo"><i><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg></i>US MODS Downloader</span>
   <h1>Ek link.<br><em>Har platform.</em></h1>
-  <p class="sub">TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud aur CapCut. Link paste karo ya song ka naam likho.</p>
+  <p class="sub">TikTok, Instagram, YouTube, Facebook, Twitter/X, Threads, Spotify, Pinterest, CapCut, MediaFire aur 20+ platforms. Link paste karo ya song ka naam likho.</p>
 </header>
 
 <div class="box">
   <div class="in">
     <input id="u" type="text" inputmode="url" placeholder="Link ya song ka naam paste karo" autocomplete="off" aria-label="Link">
-    <select id="p" aria-label="API"><option value="">Auto</option></select>
+    <button class="pst" id="pst" type="button">Paste</button><select id="p" aria-label="API"><option value="">Auto</option></select>
     <button class="go" id="go">Get media</button>
   </div>
 </div>
-<div class="chips"><span class="chip">TikTok</span><span class="chip">Instagram</span><span class="chip">YouTube</span><span class="chip">Facebook</span><span class="chip">Pinterest</span><span class="chip">SoundCloud</span><span class="chip">CapCut</span><span class="chip">Spotify search</span></div>
+<div class="chips"><span class="chip">TikTok</span><span class="chip">Instagram</span><span class="chip">YouTube</span><span class="chip">Facebook</span><span class="chip">Pinterest</span><span class="chip">SoundCloud</span><span class="chip">CapCut</span><span class="chip">Twitter/X</span><span class="chip">Threads</span><span class="chip">Spotify</span><span class="chip">MediaFire</span><span class="chip">RedNote</span><span class="chip">Douyin</span><span class="chip">Shopee</span><span class="chip">Pixeldrain</span><span class="chip">GitHub</span><span class="chip">Spotify search</span></div>
 
 <div id="st" role="status"></div>
 <div id="log"></div>
@@ -156,6 +170,7 @@ footer{margin:30px 4px 0;font-size:.8rem;color:var(--mut)}
   <div class="dvl" id="dvl"></div>
 </section>
 <footer>Sirf apna ya allowed content download karo. Auto mode ek API fail hone par agli try karta hai.</footer>
+<div class="foot">Made with care by <b>M Usman Chachar</b> &middot; US MODS Downloader</div>
 </main>
 <div class="toast" id="toast"></div>
 
@@ -184,7 +199,7 @@ function render(j){
 }
 async function go(){
   if(window.askNotify)askNotify();
-  const u=$('u').value.trim();if(!u){$('st').className='';$('st').textContent='Link ya naam daalo.';return}
+  let u=$('u').value.trim();u=(u.match(/https?:\/\/[^\s<>"']+/)||[u])[0];if(!u){$('st').className='';$('st').textContent='Link ya naam daalo.';return}
   $('go').disabled=true;$('res').style.display='none';$('sk').style.display='block';$('st').className='';$('st').textContent='';$('log').innerHTML='';
   const enc=encodeURIComponent(u);let done=false,total=0;
   try{
@@ -212,6 +227,7 @@ async function go(){
   }catch(e){$('st').className='err';$('st').textContent=e.message}
   $('sk').style.display='none';$('go').disabled=false;
 }
+$('pst').onclick=async()=>{try{$('u').value=await navigator.clipboard.readText();$('u').focus()}catch{toast('Clipboard allow karo ya manually paste karo')}};
 $('go').onclick=go;$('u').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
 
 // ---- About developer: yahan apni details badlo ----
@@ -220,7 +236,7 @@ const DEV={
   role:'Full-stack developer',
   bio:'Salam! Main is website ka developer hoon. Mujhe aise tools banana pasand hai jo kaam asaan kar dein: ek link, ek click aur kaam ho jaye. US MODS Downloader ko maine free APIs, Vercel aur plain JavaScript se banaya hai, taake ye tez rahe aur use karna simple ho. Koi API fail ho to agli khud try hoti hai, aur download ki hui media seedha built-in player me chal jati hai.',
   skills:['JavaScript','Node.js','Vercel','REST APIs','UI design'],
-  links:[['WhatsApp','https://wa.me/92300XXXXXXX'],['GitHub','https://github.com/username'],['Instagram','https://instagram.com/username']]
+  links:[['WhatsApp','https://wa.me/923204822390'],['Facebook','https://www.facebook.com/profile.php?id=100078859791751'],['GitHub','https://github.com/Usman7472860'],['TikTok','https://www.tiktok.com/@m_usman_khan_0?_r=1&_t=ZS-9AfgW8fra2W']]
 };
 (function(){
   $('dvn').textContent=DEV.name;$('dvr').textContent=DEV.role;$('dvb').textContent=DEV.bio;

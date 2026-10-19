@@ -6,7 +6,8 @@ Static website + Vercel serverless functions. Koi build step nahi, koi database 
 
 ## Features
 
-- TikTok, Instagram, YouTube, Facebook, Pinterest, SoundCloud, CapCut
+- TikTok, Instagram, YouTube, Facebook, Twitter/X, Threads, Spotify, Pinterest, SoundCloud, CapCut, MediaFire, RedNote, Douyin, Shopee, Videy, Pixeldrain, Sfile, GitHub ZIP, Alight Motion (71 providers, auto fallback)
+  - Env vars (optional): SANKA_KEY, KAYZU_KEY, NEOXR_KEY
 - Song ka naam likho to audio (YouTube / Spotify search) mil jata hai
 - **Universal API v1 + v2**: har platform ke link par sabse pehle try hoti hain (dropdown me bhi selectable)
 - **Installable app (PWA)**: Chrome me "Install App" button aata hai, home screen par app ki tarah khulta hai; offline me bhi UI khulti hai
