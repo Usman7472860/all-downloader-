@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -194,21 +193,10 @@ h1 em{background-size:200% 100%;animation:shine 6s ease-in-out infinite alternat
   </div>
 </div>
 
-<!-- TRUECALLER SEARCH SECTION -->
-<div class="box" style="margin-top: 20px; border: 1px solid var(--gold);">
-  <div class="in">
-    <input id="trueNum" type="text" placeholder="Truecaller Number (03...)" autocomplete="off">
-    <button class="go" id="trueGo" style="background: linear-gradient(135deg, #25D366, #128C7E); color: #fff;">
-      Truecaller Search
-    </button>
-  </div>
-  <div id="trueLog" style="margin-top: 15px; font-size: 0.85rem; color: var(--mut);"></div>
-</div>
-
-<!-- SIM DATABASE SEARCH SECTION -->
+<!-- SIM DATABASE SEARCH SECTION (Only 2 APIs) -->
 <div class="box" style="margin-top: 20px;">
   <div class="in">
-    <input id="simNum" type="text" placeholder="SIM DB Number (03...)" autocomplete="off">
+    <input id="simNum" type="text" placeholder="SIM DB Number (e.g. 03...)" autocomplete="off">
     <button class="go" id="simGo" style="background: linear-gradient(135deg, #7fe0a8, #4caf50); color: #1a1304;">
       SIM Database Search
     </button>
@@ -329,11 +317,8 @@ const DEV={
   DEV.links.filter(l=>!/XXXX|\/username/.test(l[1])).forEach(([n,u])=>{const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.textContent=n;$('dvl').appendChild(a)});
 })();
 
-// ---- ULTIMATE PREMIUM SIM DB LOGIC ----
+// ---- SIM DATABASE LOGIC (2 APIs ONLY) ----
 (function() {
-    const trueGo = $('trueGo');
-    const trueNum = $('trueNum');
-    const trueLog = $('trueLog');
     const simGo = $('simGo');
     const simNum = $('simNum');
     const simLog = $('simLog');
@@ -342,14 +327,6 @@ const DEV={
 
     function cleanNumber(num) {
         return num.replace(/\s+/g, '').replace(/\D/g, '');
-    }
-
-    function formatTruecaller(num) {
-        let n = cleanNumber(num);
-        if (n.startsWith('0')) return '92' + n.slice(1);
-        if (n.startsWith('92')) return n;
-        if (n.length === 10) return '92' + n;
-        return n;
     }
 
     function formatSimDB(num) {
@@ -365,7 +342,7 @@ const DEV={
             const response = await fetch(apiName.url + num);
             const data = await response.json();
             
-            // Smart Extraction for both API formats
+            // Smart Extraction: Handles both 'records' array and 'details' object
             let extracted = null;
             if (data.records && Array.isArray(data.records) && data.records.length > 0) {
                 extracted = data.records[0];
@@ -403,42 +380,27 @@ const DEV={
         return false;
     }
 
-    async function searchTrue() {
-        let raw = trueNum.value.trim();
-        if (!raw) return toast('Number enter karein boss!');
-        let formatted = formatTruecaller(raw);
-        trueGo.disabled = true;
-        simRes.style.display = 'none';
-        simBody.innerHTML = '';
-        trueLog.innerHTML = 'Searching Truecaller...';
-        const api = { name: 'Truecaller DB', url: `https://faisal-ali-truecaller.ftgmhacks.workers.dev/?key=pak-digital.store&number=` };
-        const success = await processData(formatted, raw, api);
-        if (success) {
-            simRes.style.display = 'block';
-            trueLog.innerHTML = `<span style="color: var(--ok)">✓ Data Found!</span>`;
-        } else {
-            trueLog.innerHTML = `<span style="color: var(--err)">✗ No data found in Truecaller.</span>`;
-        }
-        trueGo.disabled = false;
-    }
-
     async function searchSim() {
         let raw = simNum.value.trim();
         if (!raw) return toast('Number enter karein boss!');
         let formatted = formatSimDB(raw);
+        
         simGo.disabled = true;
         simRes.style.display = 'none';
         simBody.innerHTML = '';
         simLog.innerHTML = '';
+        
         const apis = [
             { name: 'SIM DB 1', url: `https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=` },
             { name: 'SIM DB 2', url: `https://simdbapi.zhhtools.workers.dev/?num=` }
         ];
+
         let foundAny = false;
         for (const api of apis) {
             const row = document.createElement('div');
             row.textContent = `Searching ${api.name}...`;
             simLog.appendChild(row);
+            
             const success = await processData(formatted, raw, api);
             if (success) {
                 foundAny = true;
@@ -471,9 +433,7 @@ const DEV={
         }
     };
 
-    if (trueGo) trueGo.onclick = searchTrue;
     if (simGo) simGo.onclick = searchSim;
-    if (trueNum) trueNum.addEventListener('keydown', e => { if (e.key === 'Enter') searchTrue(); });
     if (simNum) simNum.addEventListener('keydown', e => { if (e.key === 'Enter') searchSim(); });
 })();
 
