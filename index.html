@@ -126,7 +126,7 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
         <input id="simNum" type="text" placeholder="SIM DB Number (e.g. 03...)" autocomplete="off">
         <button class="go" id="simGo" style="background: linear-gradient(135deg, #7fe0a8, #4caf50); color: #1a1304;">Search</button>
       </div>
-      <div id="simLog" style="margin-top:15px; font-size:0.85rem; color:var(--mut);"></div>
+      <div id="simLog" style="margin-top:15px; font-size:0.85rem; color:var(--mut); text-align:center;"></div>
     </div>
     <div id="simRes" style="display:none; margin-top:18px;">
         <div id="simBody"></div>
@@ -194,7 +194,6 @@ function openTab(evt, tabId) {
 
 function toast(m, duration = 2600) {
     const t=$('toast'); t.textContent=m; t.classList.add('on');
-    // Clear any existing timeout to prevent toast from flickering
     if(window.toastTimer) clearTimeout(window.toastTimer);
     window.toastTimer = setTimeout(()=>t.classList.remove('on'), duration);
 }
@@ -211,17 +210,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- ADVANCED DOWNLOAD WITH PROGRESS & SPEED ---
+// --- ADVANCED DOWNLOAD LOGIC ---
 async function handleDownload(url, title) {
     try {
-        // Step 1: Try original Lib system first
         if (typeof Lib !== 'undefined' && typeof Lib.download === 'function') {
             Lib.download(url, title);
-            toast("Download started via System ✅");
             return;
         }
 
-        // Step 2: Advanced XHR Download for progress tracking
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.responseType = 'blob';
@@ -233,11 +229,8 @@ async function handleDownload(url, title) {
                 const percent = Math.round((event.loaded / event.total) * 100);
                 const loadedMB = (event.loaded / (1024 * 1024)).toFixed(2);
                 const totalMB = (event.total / (1024 * 1024)).toFixed(2);
-                
-                // Calculate Speed
                 const elapsed = (Date.now() - startTime) / 1000;
-                const speed = (event.loaded / elapsed / (1024 * 1024)).toFixed(2); // MB/s
-
+                const speed = (event.loaded / elapsed / (1024 * 1024)).toFixed(2);
                 toast(`Downloading: ${percent}% | ${loadedMB}MB / ${totalMB}MB | ${speed} MB/s`, 1000);
             }
         };
@@ -254,21 +247,15 @@ async function handleDownload(url, title) {
                 window.URL.revokeObjectURL(blobUrl);
                 document.body.removeChild(a);
                 toast("Download Complete ✅", 3000);
-            } else {
-                throw new Error(`Server responded with ${xhr.status}`);
-            }
+            } else { throw new Error(`Server error: ${xhr.status}`); }
         };
 
-        xhr.onerror = () => { throw new Error("Network error occurred"); };
-        
+        xhr.onerror = () => { throw new Error("Network error"); };
         xhr.send();
-        toast("Connecting to server...");
-
+        toast("Starting Download...");
     } catch (e) {
-        console.error("DL Error:", e);
-        // Final fallback: open in new tab
         window.open(url, '_blank');
-        toast(`Error: ${e.message}. Opening in new tab...`, 4000);
+        toast(`Error: ${e.message}. Opening in tab...`, 4000);
     }
 }
 
@@ -301,7 +288,7 @@ async function handleDownload(url, title) {
                     player.src({ src: url, type: 'application/x-mpegURL' });
                     player.play();
                     toast(`Playing ${name}...`);
-                } else { toast("Is channel ka link nahi mila!"); }
+                } else { toast("Link missing!"); }
             };
             grid.appendChild(div);
         });
@@ -332,35 +319,51 @@ async function go(){
 $('go').onclick = go;
 $('pst').onclick = async () => { $('u').value = await navigator.clipboard.readText(); };
 
+// --- FIXED SIM DATABASE LOGIC ---
 async function searchSim() {
     let num = $('simNum').value.trim(); if(!num) return toast('Number enter karein!');
     $('simGo').disabled = true; $('simRes').style.display = 'none'; $('simBody').innerHTML = '';
-    $('simLog').textContent = 'Searching...';
-    const apis = [`https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${num}`, `https://simdbapi.zhhtools.workers.dev/?num=${num}`];
-    let found = false;
-    for(let url of apis) {
-        try {
-            const r = await fetch(url); const d = await r.json();
+    $('simLog').textContent = 'Searching Database...';
+    
+    const apis = [
+        `https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${num}`, 
+        `https://simdbapi.zhhtools.workers.dev/?num=${num}`
+    ];
+    
+    let foundAny = false;
+    try {
+        for(let url of apis) {
+            const r = await fetch(url);
+            const d = await r.json();
             const data = d.records ? d.records[0] : d;
+            
+            // Only add card if essential data (name) exists
             if(data && (data.name || data.fullName)) {
-                found = true;
-                $('simRes').style.display = 'block';
-                const cardId = `card-${Date.now()}`;
+                foundAny = true;
+                const cardId = `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
                 $('simBody').innerHTML += `
                     <div class="premium-card" id="${cardId}">
                         <div class="info-row"><span class="info-label">Name</span><span class="info-value">${data.name || data.fullName}</span></div>
-                        <div class="info-row"><span class="info-label">CNIC</span><span class="info-value">${data.cnic || 'N/A'}</span></div>
-                        <div class="info-row"><span class="info-label">Address</span><span class="info-value">${data.address || 'N/A'}</span></div>
+                        <div class="info-row"><span class="info-label">CNIC</span><span class="info-value">${data.cnic || 'Not found'}</span></div>
+                        <div class="info-row"><span class="info-label">Address</span><span class="info-value">${data.address || 'Not found'}</span></div>
                         <div class="card-footer">Data Provided by M Usman Chachar</div>
                         <div class="card-actions">
                             <button class="action-btn" onclick="saveCardImage('${cardId}')">💾 Save Image</button>
                         </div>
                     </div>`;
             }
-        } catch(e){}
+        }
+        
+        if(foundAny) {
+            $('simRes').style.display = 'block';
+            $('simLog').textContent = '';
+        } else {
+            $('simLog').innerHTML = `<span style="color:var(--err)">❌ No data found for this number in any SIM DB.</span>`;
+        }
+    } catch(e) {
+        $('simLog').innerHTML = `<span style="color:var(--err)">Network Error. Please try again.</span>`;
     }
-    if(!found) toast('Data nahi mila!');
-    $('simLog').textContent = ''; $('simGo').disabled = false;
+    $('simGo').disabled = false;
 }
 $('simGo').onclick = searchSim;
 
