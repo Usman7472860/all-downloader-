@@ -57,8 +57,34 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .card-actions { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
 .action-btn { padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
 
-.live-player-box { background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; position: relative; }
-.video-js { width: 100% !important; height: 300px !important; }
+/* --- PROFESSIONAL YOUTUBE STYLE PLAYER --- */
+.live-player-box { 
+    background: #000; 
+    border-radius: 20px; 
+    overflow: hidden; 
+    border: 1px solid var(--line); 
+    margin-bottom: 20px; 
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.video-js { 
+    width: 100% !important; 
+    height: auto !important; 
+    aspect-ratio: 16 / 9; 
+}
+/* Customizing Video.js controls to look more like YouTube */
+.vjs-big-play-button {
+    background-color: rgba(232, 192, 106, 0.9) !important;
+    color: #1a1304 !important;
+    border-radius: 50% !important;
+    width: 60px !important;
+    height: 60px !important;
+    line-height: 60px !important;
+    border: none !important;
+}
+.vjs-control-bar { background-color: rgba(0, 0, 0, 0.7) !important; }
+.vjs-play-progress { background-color: var(--gold) !important; }
+
 .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
 .channel-item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; transition: 0.3s; }
 .channel-item img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-bottom: 5px; border: 2px solid var(--gold); }
@@ -133,13 +159,14 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     <div class="box">
         <h2 style="text-align:center; color:var(--gold); font-family:Fraunces; margin-top:0;">🔴 Live Matches</h2>
         <div class="live-player-box">
-            <!-- ADDED POSTER IMAGE HERE: Replace developer.jpg with your actual image link -->
+            <!-- Professional PosterImage -->
             <video id="live-player" 
-                   class="video-js vjs-big-play-centered" 
+                   class="video-js vjs-big-play-centered vjs-fluid" 
                    controls 
                    preload="auto" 
                    poster="developer.jpg" 
-                   data-setup="{}"></video>
+                   data-setup='{"fluid": true}'>
+            </video>
         </div>
         <div class="channels-grid" id="channels-list">
             <div style="grid-column:1/-1; text-align:center; color:var(--mut);">Loading Channels...</div>
@@ -193,10 +220,17 @@ function toast(m){
     setTimeout(()=>t.classList.remove('on'),2600);
 }
 
-// --- CORRECTED LIVE TV LOGIC ---
+// --- PROFESSIONAL LIVE TV LOGIC ---
 (async function initLiveTV() {
     const API_URL = "https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest";
-    const player = videojs('live-player');
+    const player = videojs('live-player', {
+        fluid: true, // Makes player responsive like YouTube
+        playbackRates: [0.5, 1, 1.5, 2],
+        controlBar: {
+            fullscreenToggle: true,
+            playbackRateMenuButton: true
+        }
+    });
     const grid = $('channels-list');
 
     async function loadChannels() {
@@ -286,8 +320,7 @@ async function searchSim() {
                         <div class="card-footer">Data Provided by M Usman Chachar</div>
                         <div class="card-actions">
                             <button class="action-btn" onclick="saveCardImage('${cardId}')">💾 Save Image</button>
-                        </div>
-                    </div>`;
+                        </div>`;
             }
         } catch(e){}
     }
