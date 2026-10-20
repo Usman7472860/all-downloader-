@@ -16,6 +16,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Video.js CSS for Professional Player -->
+<link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+
 <style>
 :root{--top:#1a1612;--bg:#0d0c0f;--bg2:#17141b;--card:rgba(255,255,255,.045);--line:rgba(255,255,255,.1);--fg:#f4efe6;--mut:#a39d94;--gold:#e8c06a;--gold2:#b8883a;--ink:#1a1304;--err:#ff8a73;--ok:#7fe0a8}
 @media (prefers-color-scheme:light){:root{--top:#f1eadb;--bg:#f6f1e7;--bg2:#ece4d3;--card:rgba(255,255,255,.7);--line:rgba(60,40,10,.14);--fg:#1d170c;--mut:#6e6552;--gold:#9a6a14;--gold2:#6f4a0a;--ink:#fff8e8;--err:#b3341d;--ok:#1b7a47}}
@@ -174,6 +177,29 @@ h1 em{background-size:200% 100%;animation:shine 6s ease-in-out infinite alternat
     background: var(--gold);
     color: var(--ink);
 }
+
+/* --- LIVE TV STYLES --- */
+.live-container { margin-top: 20px; }
+.live-player-box { 
+    background: #000; border-radius: 20px; overflow: hidden; 
+    border: 1px solid var(--line); margin-bottom: 20px; 
+    box-shadow: 0 0 20px rgba(232, 192, 106, 0.2);
+}
+.video-js { width: 100% !important; height: 350px !important; }
+.channels-grid { 
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+    gap: 12px; margin-top: 15px; 
+}
+.channel-item { 
+    background: var(--card); border: 1px solid var(--line); 
+    border-radius: 15px; padding: 10px; text-align: center; 
+    cursor: pointer; transition: all 0.2s; 
+}
+.channel-item:hover { border-color: var(--gold); background: rgba(232, 192, 106, 0.1); transform: translateY(-3px); }
+.channel-item img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; border: 2px solid var(--gold); }
+.channel-item span { display: block; font-size: 0.75rem; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.channel-item.active { border-color: var(--gold); background: linear-gradient(135deg, rgba(232, 192, 106, 0.2), transparent); box-shadow: 0 0 10px var(--gold); }
+
 </style>
 <link rel="stylesheet" href="player.css">
 </head>
@@ -191,6 +217,20 @@ h1 em{background-size:200% 100%;animation:shine 6s ease-in-out infinite alternat
     <button class="pst" id="pst" type="button">Paste</button><select id="p" aria-label="API"><option value="">Auto</option></select>
     <button class="go" id="go">Get media</button>
   </div>
+</div>
+
+<!-- LIVE TV SECTION INTEGRATED HERE -->
+<div class="live-container">
+    <div class="box" style="margin-top: 20px;">
+        <h2 style="font-family: Fraunces, serif; font-size: 1.4rem; margin: 0 0 15px; color: var(--gold); text-align: center;">🔴 Live Matches</h2>
+        <div class="live-player-box">
+            <video id="live-player" class="video-js vjs-big-play-centered" controls preload="auto" data-setup="{}"></video>
+        </div>
+        <div class="channels-grid" id="channels-list">
+            <!-- Channels from API -->
+            <div style="grid-column: 1/-1; text-align: center; color: var(--mut);">Loading Channels...</div>
+        </div>
+    </div>
 </div>
 
 <!-- SIM DATABASE SEARCH SECTION (Only 2 APIs) -->
@@ -249,6 +289,8 @@ h1 em{background-size:200% 100%;animation:shine 6s ease-in-out infinite alternat
 </main>
 <div class="toast" id="toast"></div>
 
+<!-- Video.js JS -->
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
 <script src="player.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -256,6 +298,40 @@ const ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 const CHECK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const EXT={video:'mp4',audio:'mp3',image:'jpg'};
 let tt;function toast(m){m=String(m).replace(/\s+/g,' ');const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+
+// --- LIVE TV LOGIC ---
+(async function initLiveTV() {
+    const API_URL = "https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest";
+    const player = videojs('live-player');
+    const grid = $('channels-list');
+
+    async function loadChannels() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            const channels = data.record;
+            grid.innerHTML = '';
+
+            channels.forEach(channel => {
+                const div = document.createElement('div');
+                div.className = 'channel-item';
+                div.innerHTML = `<img src="${channel.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${channel.channel_name}</span>`;
+                div.onclick = () => {
+                    document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                    div.classList.add('active');
+                    player.src({ src: channel.url, type: 'application/x-mpegURL' });
+                    player.play();
+                    window.scrollTo({ top: $('live-player').offsetTop - 100, behavior: 'smooth' });
+                };
+                grid.appendChild(div);
+            });
+        } catch (e) {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--err)">Failed to load channels.</div>';
+        }
+    }
+    loadChannels();
+})();
+
 fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{$('p').innerHTML='<option value="">Auto</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}).catch(()=>{});
 
 function startDownload(l,title,btn){Lib.download(l,title,window.curThumb||'',btn)}
@@ -342,7 +418,6 @@ const DEV={
             const response = await fetch(apiName.url + num);
             const data = await response.json();
             
-            // Smart Extraction: Handles both 'records' array and 'details' object
             let extracted = null;
             if (data.records && Array.isArray(data.records) && data.records.length > 0) {
                 extracted = data.records[0];
