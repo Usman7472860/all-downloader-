@@ -112,6 +112,9 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .dbox .dic{font-size:2.4rem;line-height:1}.dbox h3{margin:10px 0 6px;font-family:Fraunces,serif}
 .dbox p{margin:0 0 18px;color:var(--mut);white-space:pre-line;font-size:.9rem;max-height:40vh;overflow:auto;word-break:break-word}
 .dbox .go{width:100%;flex:none}
+.lbg{position:absolute;inset:0;background:#000 url(live-bg.jpg) center 28%/cover no-repeat;pointer-events:none}
+.lp.on .lbg{display:none}
+.lerr{background:rgba(0,0,0,.6)!important}
 </style>
 </head>
 <body>
@@ -171,6 +174,7 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 <div id="tab-live" class="tab-content">
     <div class="lp" id="lp">
         <video id="lv" playsinline webkit-playsinline preload="auto"></video>
+        <div class="lbg"></div>
         <div class="lt" id="lname">Live Matches</div>
         <div class="lspin"></div>
         <button class="lbig" id="lbig" aria-label="Play/Pause"></button>
@@ -310,7 +314,7 @@ const show=()=>{ lp.classList.remove('idle'); clearTimeout(hide); if(!v.paused) 
 const range=()=>{ const s=v.seekable; return s.length?[s.start(0),s.end(s.length-1)]:null; };
 const seekBy=d=>{ const r=range(); if(r) v.currentTime=Math.min(r[1],Math.max(r[0],v.currentTime+d)); };
 const toggle=()=>!window._lc?toast('Pehle neeche se channel chuno'):v.paused?v.play().catch(()=>{}):v.pause();
-function fail(m){ lp.classList.remove('buf'); lp.classList.add('err'); $('lerrt').textContent=m; }
+function fail(m){ lp.classList.remove('buf','on'); lp.classList.add('err'); $('lerrt').textContent=m; }
 
 function buildQ(lv){
   const m=$('lqm'); m.innerHTML='';
@@ -319,7 +323,7 @@ function buildQ(lv){
   $('lq').style.display=lv.length>1?'':'none'; $('lq').textContent='Auto';
 }
 function play(ch){
-  tries=0; lp.classList.remove('err'); lp.classList.add('buf'); $('lname').textContent=ch.name; window._lc=ch;
+  tries=0; lp.classList.remove('err','on'); lp.classList.add('buf'); $('lname').textContent=ch.name; window._lc=ch;
   if(hls){ hls.destroy(); hls=null; } $('lq').style.display='none';
   const u=ch.url, isHls=!/\.(mp4|webm|ogg)(\?|$)/i.test(u);
   if(isHls && window.Hls && Hls.isSupported()){
@@ -337,7 +341,8 @@ function play(ch){
 }
 v.onplay=v.onpause=()=>{ const p=v.paused; $('lplay').innerHTML=$('lbig').innerHTML=I[p?'play':'pause']; show(); };
 v.onwaiting=()=>lp.classList.add('buf');
-v.onplaying=v.oncanplay=()=>lp.classList.remove('buf');
+v.onplaying=()=>{ lp.classList.remove('buf'); lp.classList.add('on'); };
+v.oncanplay=()=>lp.classList.remove('buf');
 v.onerror=()=>{ if(!hls) fail('Video play nahi ho saki.'); };
 v.ontimeupdate=()=>{ const r=range(); if(!r) return; const k=Math.max(1,r[1]-r[0]), p=(v.currentTime-r[0])/k*100;
   $('lseek').value=p*10; $('lseek').style.setProperty('--p',p+'%'); $('llive').classList.toggle('on',r[1]-v.currentTime<12); };
@@ -378,7 +383,7 @@ lp.addEventListener('click',e=>{
   else{ lt=n; setTimeout(()=>{ if(lt===n){ lt=0; if(lp.classList.contains('idle')) show(); else{ lp.classList.add('idle'); clearTimeout(hide); } } },280); }
 });
 lp.addEventListener('pointermove',()=>{ if(!v.paused) show(); });
-window.liveStop=()=>{ leave(); if(hls){ hls.destroy(); hls=null; } v.pause(); v.removeAttribute('src'); v.load(); lp.classList.remove('buf','err'); $('lname').textContent='Live Matches'; document.querySelectorAll('.channel-item').forEach(i=>i.classList.remove('active')); };
+window.liveStop=()=>{ leave(); if(hls){ hls.destroy(); hls=null; } v.pause(); v.removeAttribute('src'); v.load(); lp.classList.remove('buf','err','on'); $('lname').textContent='Live Matches'; document.querySelectorAll('.channel-item').forEach(i=>i.classList.remove('active')); };
 
 // channels
 async function loadChannels(){
