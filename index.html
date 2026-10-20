@@ -57,7 +57,7 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .card-actions { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
 .action-btn { padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
 
-.live-player-box { background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; }
+.live-player-box { background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; position: relative; }
 .video-js { width: 100% !important; height: 300px !important; }
 .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
 .channel-item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; transition: 0.3s; }
@@ -133,7 +133,13 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     <div class="box">
         <h2 style="text-align:center; color:var(--gold); font-family:Fraunces; margin-top:0;">🔴 Live Matches</h2>
         <div class="live-player-box">
-            <video id="live-player" class="video-js vjs-big-play-centered" controls preload="auto" data-setup="{}"></video>
+            <!-- ADDED POSTER IMAGE HERE: Replace developer.jpg with your actual image link -->
+            <video id="live-player" 
+                   class="video-js vjs-big-play-centered" 
+                   controls 
+                   preload="auto" 
+                   poster="developer.jpg" 
+                   data-setup="{}"></video>
         </div>
         <div class="channels-grid" id="channels-list">
             <div style="grid-column:1/-1; text-align:center; color:var(--mut);">Loading Channels...</div>
@@ -187,7 +193,7 @@ function toast(m){
     setTimeout(()=>t.classList.remove('on'),2600);
 }
 
-// --- FIXED LIVE TV LOGIC ---
+// --- CORRECTED LIVE TV LOGIC ---
 (async function initLiveTV() {
     const API_URL = "https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest";
     const player = videojs('live-player');
@@ -197,29 +203,30 @@ function toast(m){
         try {
             const r = await fetch(API_URL);
             const d = await r.json();
-            // JSONBin API data record property mein hota hai
-            const channels = d.record || d;
+            const channels = d.record && d.record.channels ? d.record.channels : [];
 
-            if(!Array.isArray(channels)) throw new Error("API data format galat hai");
+            if (channels.length === 0) throw new Error("API mein koi channels nahi mile");
 
             grid.innerHTML = '';
-            channels.forEach((ch, index) => {
+            channels.forEach((ch) => {
                 const div = document.createElement('div');
                 div.className = 'channel-item';
-                div.innerHTML = `<img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${ch.channel_name}</span>`;
+                const logo = ch.logo || 'https://via.placeholder.com/50';
+                const name = ch.name || 'Unknown';
+                const url = ch.url || '';
+
+                div.innerHTML = `<img src="${logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${name}</span>`;
                 
-                div.onclick = async () => {
-                    // UI Active state update
+                div.onclick = () => {
                     document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
                     div.classList.add('active');
                     
-                    try {
-                        // Play the specific channel URL from the object
-                        player.src({ src: ch.url, type: 'application/x-mpegURL' });
+                    if (url) {
+                        player.src({ src: url, type: 'application/x-mpegURL' });
                         player.play();
-                        toast(`Playing ${ch.channel_name}...`);
-                    } catch(e) {
-                        toast("Stream load nahi ho saki!");
+                        toast(`Playing ${name}...`);
+                    } else {
+                        toast("Is channel ka link nahi mila!");
                     }
                 };
                 grid.appendChild(div);
