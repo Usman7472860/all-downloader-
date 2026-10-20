@@ -192,9 +192,11 @@ function openTab(evt, tabId) {
     $('header-title').textContent = titles[tabId];
 }
 
-function toast(m){
+function toast(m, duration = 2600) {
     const t=$('toast'); t.textContent=m; t.classList.add('on');
-    setTimeout(()=>t.classList.remove('on'),2600);
+    // Clear any existing timeout to prevent toast from flickering
+    if(window.toastTimer) clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(()=>t.classList.remove('on'), duration);
 }
 
 // --- AUTO-FETCH LOGIC ---
@@ -209,24 +211,64 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- FIXED DOWNLOAD HANDLER ---
+// --- ADVANCED DOWNLOAD WITH PROGRESS & SPEED ---
 async function handleDownload(url, title) {
     try {
-        if (typeof Lib !== 'undefined' && Lib.download) {
+        // Step 1: Try original Lib system first
+        if (typeof Lib !== 'undefined' && typeof Lib.download === 'function') {
             Lib.download(url, title);
-        } else {
-            // Fallback: Direct download via anchor tag
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = title || 'download';
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            toast("Download started via System ✅");
+            return;
         }
+
+        // Step 2: Advanced XHR Download for progress tracking
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+
+        let startTime = Date.now();
+
+        xhr.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                const loadedMB = (event.loaded / (1024 * 1024)).toFixed(2);
+                const totalMB = (event.total / (1024 * 1024)).toFixed(2);
+                
+                // Calculate Speed
+                const elapsed = (Date.now() - startTime) / 1000;
+                const speed = (event.loaded / elapsed / (1024 * 1024)).toFixed(2); // MB/s
+
+                toast(`Downloading: ${percent}% | ${loadedMB}MB / ${totalMB}MB | ${speed} MB/s`, 1000);
+            }
+        };
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const blob = xhr.response;
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = title || 'usmods_file';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+                toast("Download Complete ✅", 3000);
+            } else {
+                throw new Error(`Server responded with ${xhr.status}`);
+            }
+        };
+
+        xhr.onerror = () => { throw new Error("Network error occurred"); };
+        
+        xhr.send();
+        toast("Connecting to server...");
+
     } catch (e) {
-        toast("Download fail ho gaya!");
-        console.error(e);
+        console.error("DL Error:", e);
+        // Final fallback: open in new tab
+        window.open(url, '_blank');
+        toast(`Error: ${e.message}. Opening in new tab...`, 4000);
     }
 }
 
