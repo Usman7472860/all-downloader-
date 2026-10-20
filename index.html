@@ -27,13 +27,11 @@ body{margin:0;min-height:100vh;color:var(--fg);font:16px/1.55 Manrope,system-ui,
  background-attachment:fixed;padding:max(20px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom))}
 main{max-width:720px;margin:0 auto}
 
-/* NAVIGATION TABS UI */
 .nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 20px 0 30px; }
 .nav-item { background: var(--card); border: 1px solid var(--line); color: var(--fg); padding: 12px 5px; border-radius: 15px; cursor: pointer; text-align: center; transition: 0.3s; backdrop-filter: blur(10px); }
 .nav-item i { display: block; font-size: 1.4rem; margin-bottom: 4px; }
 .nav-item span { font-size: 0.7rem; font-weight: 700; display: block; }
 .nav-item.active { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: var(--ink); border-color: transparent; box-shadow: 0 5px 15px rgba(232, 192, 106, 0.3); }
-
 .tab-content { display: none; animation: fadeIn 0.4s ease; }
 .tab-content.active { display: block; }
 @keyframes fadeIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
@@ -47,19 +45,18 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .in{display:flex;gap:8px;flex-wrap:wrap}
 .in input{flex:1 1 220px;background:transparent;border:0;color:var(--fg);font:inherit;padding:14px}
 .in input:focus{outline:none}
-.go{border:0;cursor:pointer;font:700 1rem Manrope,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:14px 24px;border-radius:14px;flex:1 1 140px}
+.go{border:0;cursor:pointer;font:700 1rem Manrope,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--gold),var(--gold2));padding:14px 24px;border-radius:14px;flex:1 1 140px;transition:transform .15s}
+.go:active{transform:scale(.97)}
 .pst{border:1px solid var(--line);background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--fg);font:600 .85rem Manrope,sans-serif;border-radius:12px;padding:0 14px;cursor:pointer}
 
-/* SIM DATABASE STYLE */
 .premium-card { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); border: 1px solid var(--line); border-left: 5px solid var(--gold); border-radius: 18px; padding: 20px; margin-bottom: 20px; position: relative; }
 .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.info-label { color: var(--gold); font-weight: 700; font-size: 0.75rem; }
+.info-label { color: var(--gold); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; }
 .info-value { color: var(--fg); }
 .card-footer { margin-top: 15px; text-align: center; font-size: 0.7rem; color: var(--mut); border-top: 1px solid var(--line); padding-top: 10px; }
 .card-actions { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
 .action-btn { padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
 
-/* LIVE TV STYLE */
 .live-player-box { background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; }
 .video-js { width: 100% !important; height: 300px !important; }
 .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
@@ -68,7 +65,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .channel-item span { display: block; font-size: 0.7rem; color: var(--fg); }
 .channel-item.active { border-color: var(--gold); background: rgba(232, 192, 106, 0.2); }
 
-/* STATUS STYLE */
 #sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .sc{position:relative;border-radius:14px;overflow:hidden;background:var(--card);border:1px solid var(--line);aspect-ratio:9/14}
 .sc img,.sc video{width:100%;height:100%;object-fit:cover}
@@ -91,7 +87,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
   <h1>Tool<em id="header-title">Box</em></h1>
 </header>
 
-<!-- NEW NAVIGATION BAR -->
 <div class="nav-grid">
     <div class="nav-item active" onclick="openTab(event, 'tab-dl')"><i>📥</i><span>Downloader</span></div>
     <div class="nav-item" onclick="openTab(event, 'tab-sim')"><i>🔍</i><span>SIM Data</span></div>
@@ -99,7 +94,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     <div class="nav-item" onclick="openTab(event, 'tab-st')"><i>📱</i><span>Status</span></div>
 </div>
 
-<!-- TAB 1: DOWNLOADER -->
 <div id="tab-dl" class="tab-content active">
     <div class="box">
       <div class="in">
@@ -122,7 +116,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     </div>
 </div>
 
-<!-- TAB 2: SIM DATABASE -->
 <div id="tab-sim" class="tab-content">
     <div class="box">
       <div class="in">
@@ -136,7 +129,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     </div>
 </div>
 
-<!-- TAB 3: LIVE TV -->
 <div id="tab-live" class="tab-content">
     <div class="box">
         <h2 style="text-align:center; color:var(--gold); font-family:Fraunces; margin-top:0;">🔴 Live Matches</h2>
@@ -149,7 +141,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     </div>
 </div>
 
-<!-- TAB 4: STATUS SAVER -->
 <div id="tab-st" class="tab-content">
     <div class="box" style="text-align:center; margin-bottom:15px;">
         <p style="color:var(--mut); font-size:0.9rem; margin-bottom:15px;">WhatsApp status save karne ke liye folder chuno.</p>
@@ -182,7 +173,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 const $=id=>document.getElementById(id);
 const ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
 
-// TAB NAVIGATION LOGIC
 function openTab(evt, tabId) {
     document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
     document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
@@ -197,32 +187,50 @@ function toast(m){
     setTimeout(()=>t.classList.remove('on'),2600);
 }
 
-// --- LIVE TV LOGIC ---
+// --- FIXED LIVE TV LOGIC ---
 (async function initLiveTV() {
     const API_URL = "https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest";
     const player = videojs('live-player');
     const grid = $('channels-list');
-    try {
-        const r = await fetch(API_URL);
-        const d = await r.json();
-        const channels = d.record || d;
-        grid.innerHTML = '';
-        channels.forEach(ch => {
-            const div = document.createElement('div');
-            div.className = 'channel-item';
-            div.innerHTML = `<img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${ch.channel_name}</span>`;
-            div.onclick = () => {
-                document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
-                div.classList.add('active');
-                player.src({ src: ch.url, type: 'application/x-mpegURL' });
-                player.play();
-            };
-            grid.appendChild(div);
-        });
-    } catch(e) { grid.innerHTML = '<div style="text-align:center; color:var(--err)">API Error!</div>'; }
+
+    async function loadChannels() {
+        try {
+            const r = await fetch(API_URL);
+            const d = await r.json();
+            // JSONBin API data record property mein hota hai
+            const channels = d.record || d;
+
+            if(!Array.isArray(channels)) throw new Error("API data format galat hai");
+
+            grid.innerHTML = '';
+            channels.forEach((ch, index) => {
+                const div = document.createElement('div');
+                div.className = 'channel-item';
+                div.innerHTML = `<img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${ch.channel_name}</span>`;
+                
+                div.onclick = async () => {
+                    // UI Active state update
+                    document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                    div.classList.add('active');
+                    
+                    try {
+                        // Play the specific channel URL from the object
+                        player.src({ src: ch.url, type: 'application/x-mpegURL' });
+                        player.play();
+                        toast(`Playing ${ch.channel_name}...`);
+                    } catch(e) {
+                        toast("Stream load nahi ho saki!");
+                    }
+                };
+                grid.appendChild(div);
+            });
+        } catch(e) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--err)">API Error: ${e.message}</div>`;
+        }
+    }
+    loadChannels();
 })();
 
-// --- DOWNLOADER LOGIC ---
 async function go(){
     let u=$('u').value.trim(); if(!u){ toast('Link daalo boss!'); return }
     $('go').disabled=true; $('res').style.display='none'; $('sk').style.display='block'; $('st').textContent=''; $('log').innerHTML='';
@@ -246,7 +254,6 @@ async function go(){
 $('go').onclick = go;
 $('pst').onclick = async () => { $('u').value = await navigator.clipboard.readText(); };
 
-// --- SIM DATABASE LOGIC ---
 async function searchSim() {
     let num = $('simNum').value.trim(); if(!num) return toast('Number enter karein!');
     $('simGo').disabled = true; $('simRes').style.display = 'none'; $('simBody').innerHTML = '';
@@ -292,7 +299,6 @@ window.saveCardImage = async (id) => {
     toast('Saved to Gallery!');
 };
 
-// --- STATUS SAVER LOGIC ---
 const DB=()=>new Promise((res,rej)=>{const r=indexedDB.open('usmods-status',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const kv=async(m,k,v)=>{const d=await DB();return new Promise((res,rej)=>{const t=d.transaction('k',m==='get'?'readonly':'readwrite'),s=t.objectStore('k'),r=m==='get'?s.get(k):s.put(v,k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})};
 
