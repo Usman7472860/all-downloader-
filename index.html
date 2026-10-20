@@ -57,31 +57,9 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .card-actions { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
 .action-btn { padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
 
-/* --- PROFESSIONAL YOUTUBE STYLE PLAYER --- */
-.live-player-box { 
-    background: #000; 
-    border-radius: 20px; 
-    overflow: hidden; 
-    border: 1px solid var(--line); 
-    margin-bottom: 20px; 
-    position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-.video-js { 
-    width: 100% !important; 
-    height: auto !important; 
-    aspect-ratio: 16 / 9; 
-}
-/* Customizing Video.js controls to look more like YouTube */
-.vjs-big-play-button {
-    background-color: rgba(232, 192, 106, 0.9) !important;
-    color: #1a1304 !important;
-    border-radius: 50% !important;
-    width: 60px !important;
-    height: 60px !important;
-    line-height: 60px !important;
-    border: none !important;
-}
+.live-player-box { background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.video-js { width: 100% !important; height: auto !important; aspect-ratio: 16 / 9; }
+.vjs-big-play-button { background-color: rgba(232, 192, 106, 0.9) !important; color: #1a1304 !important; border-radius: 50% !important; width: 60px !important; height: 60px !important; line-height: 60px !important; border: none !important; }
 .vjs-control-bar { background-color: rgba(0, 0, 0, 0.7) !important; }
 .vjs-play-progress { background-color: var(--gold) !important; }
 
@@ -159,7 +137,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
     <div class="box">
         <h2 style="text-align:center; color:var(--gold); font-family:Fraunces; margin-top:0;">🔴 Live Matches</h2>
         <div class="live-player-box">
-            <!-- Professional PosterImage -->
             <video id="live-player" 
                    class="video-js vjs-big-play-centered vjs-fluid" 
                    controls 
@@ -220,56 +197,73 @@ function toast(m){
     setTimeout(()=>t.classList.remove('on'),2600);
 }
 
-// --- PROFESSIONAL LIVE TV LOGIC ---
+// --- AUTO-FETCH LOGIC ---
+window.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedUrl = urlParams.get('url') || urlParams.get('text') || urlParams.get('title');
+    if (sharedUrl) {
+        const linkMatch = sharedUrl.match(/https?:\/\/[^\s<>"']+/);
+        const finalUrl = linkMatch ? linkMatch[0] : sharedUrl;
+        $('u').value = finalUrl;
+        setTimeout(() => { go(); }, 600);
+    }
+});
+
+// --- FIXED DOWNLOAD HANDLER ---
+async function handleDownload(url, title) {
+    try {
+        if (typeof Lib !== 'undefined' && Lib.download) {
+            Lib.download(url, title);
+        } else {
+            // Fallback: Direct download via anchor tag
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = title || 'download';
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    } catch (e) {
+        toast("Download fail ho gaya!");
+        console.error(e);
+    }
+}
+
+// --- LIVE TV LOGIC ---
 (async function initLiveTV() {
     const API_URL = "https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest";
     const player = videojs('live-player', {
-        fluid: true, // Makes player responsive like YouTube
+        fluid: true, 
         playbackRates: [0.5, 1, 1.5, 2],
-        controlBar: {
-            fullscreenToggle: true,
-            playbackRateMenuButton: true
-        }
+        controlBar: { fullscreenToggle: true, playbackRateMenuButton: true }
     });
     const grid = $('channels-list');
-
-    async function loadChannels() {
-        try {
-            const r = await fetch(API_URL);
-            const d = await r.json();
-            const channels = d.record && d.record.channels ? d.record.channels : [];
-
-            if (channels.length === 0) throw new Error("API mein koi channels nahi mile");
-
-            grid.innerHTML = '';
-            channels.forEach((ch) => {
-                const div = document.createElement('div');
-                div.className = 'channel-item';
-                const logo = ch.logo || 'https://via.placeholder.com/50';
-                const name = ch.name || 'Unknown';
-                const url = ch.url || '';
-
-                div.innerHTML = `<img src="${logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${name}</span>`;
-                
-                div.onclick = () => {
-                    document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
-                    div.classList.add('active');
-                    
-                    if (url) {
-                        player.src({ src: url, type: 'application/x-mpegURL' });
-                        player.play();
-                        toast(`Playing ${name}...`);
-                    } else {
-                        toast("Is channel ka link nahi mila!");
-                    }
-                };
-                grid.appendChild(div);
-            });
-        } catch(e) {
-            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--err)">API Error: ${e.message}</div>`;
-        }
-    }
-    loadChannels();
+    try {
+        const r = await fetch(API_URL);
+        const d = await r.json();
+        const channels = d.record && d.record.channels ? d.record.channels : [];
+        if (channels.length === 0) throw new Error("API mein koi channels nahi mile");
+        grid.innerHTML = '';
+        channels.forEach((ch) => {
+            const div = document.createElement('div');
+            div.className = 'channel-item';
+            const logo = ch.logo || 'https://via.placeholder.com/50';
+            const name = ch.name || 'Unknown';
+            const url = ch.url || '';
+            div.innerHTML = `<img src="${logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${name}</span>`;
+            div.onclick = () => {
+                document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
+                div.classList.add('active');
+                if (url) {
+                    player.src({ src: url, type: 'application/x-mpegURL' });
+                    player.play();
+                    toast(`Playing ${name}...`);
+                } else { toast("Is channel ka link nahi mila!"); }
+            };
+            grid.appendChild(div);
+        });
+    } catch(e) { grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--err)">API Error: ${e.message}</div>`; }
 })();
 
 async function go(){
@@ -283,7 +277,8 @@ async function go(){
             $('mt').textContent = j.provider;
             $('th').src = j.thumb || '';
             $('ln').innerHTML = j.links.map(l => `
-                <button class="dl" style="display:flex; align-items:center; gap:10px; padding:12px; background:rgba(255,255,255,0.05); color:var(--fg); border:1px solid var(--line); border-radius:14px; cursor:pointer; text-align:left;" onclick="Lib.download('${l.url}','${j.title}')">
+                <button class="dl" style="display:flex; align-items:center; gap:10px; padding:12px; background:rgba(255,255,255,0.05); color:var(--fg); border:1px solid var(--line); border-radius:14px; cursor:pointer; text-align:left;" 
+                onclick="handleDownload('${l.url}','${j.title.replace(/'/g, "\\'")}')">
                     <span style="background:var(--gold); color:var(--ink); padding:5px; border-radius:8px;">${ICON}</span>
                     <span><b>${l.label}</b><br><small style="color:var(--mut)">${l.type}</small></span>
                 </button>`).join('');
@@ -299,10 +294,7 @@ async function searchSim() {
     let num = $('simNum').value.trim(); if(!num) return toast('Number enter karein!');
     $('simGo').disabled = true; $('simRes').style.display = 'none'; $('simBody').innerHTML = '';
     $('simLog').textContent = 'Searching...';
-    const apis = [
-        `https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${num}`,
-        `https://simdbapi.zhhtools.workers.dev/?num=${num}`
-    ];
+    const apis = [`https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${num}`, `https://simdbapi.zhhtools.workers.dev/?num=${num}`];
     let found = false;
     for(let url of apis) {
         try {
@@ -320,7 +312,8 @@ async function searchSim() {
                         <div class="card-footer">Data Provided by M Usman Chachar</div>
                         <div class="card-actions">
                             <button class="action-btn" onclick="saveCardImage('${cardId}')">💾 Save Image</button>
-                        </div>`;
+                        </div>
+                    </div>`;
             }
         } catch(e){}
     }
