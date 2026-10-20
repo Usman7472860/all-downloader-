@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+<link rel="stylesheet" href="player.css">
 
 <style>
 :root{--top:#1a1612;--bg:#0d0c0f;--bg2:#17141b;--card:rgba(255,255,255,.045);--line:rgba(255,255,255,.1);--fg:#f4efe6;--mut:#a39d94;--gold:#e8c06a;--gold2:#b8883a;--ink:#1a1304;--err:#ff8a73;--ok:#7fe0a8}
@@ -57,11 +57,6 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .card-actions { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
 .action-btn { padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
 
-.live-player-box { background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-.video-js { width: 100% !important; height: auto !important; aspect-ratio: 16 / 9; }
-.vjs-big-play-button { background-color: rgba(232, 192, 106, 0.9) !important; color: #1a1304 !important; border-radius: 50% !important; width: 60px !important; height: 60px !important; line-height: 60px !important; border: none !important; }
-.vjs-control-bar { background-color: rgba(0, 0, 0, 0.7) !important; }
-.vjs-play-progress { background-color: var(--gold) !important; }
 
 .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
 .channel-item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; transition: 0.3s; }
@@ -82,6 +77,41 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 .toast.on{opacity:1}
 .sk{display:none;margin-top:18px;border-radius:20px;height:170px;border:1px solid var(--line);background:linear-gradient(100deg,var(--card) 30%,color-mix(in srgb,var(--fg) 9%,transparent) 50%,var(--card) 70%);background-size:200% 100%;animation:sh 1.2s linear infinite}
 @keyframes sh{to{background-position:-200% 0}}
+
+/* live player (YouTube style: top 40% of screen, sticky) */
+.lp{position:sticky;top:0;z-index:40;margin:0 -18px 14px;height:40vh;height:40dvh;min-height:200px;background:#000;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;color:#fff}
+@media(min-width:721px){.lp{margin:0 0 14px;height:auto;aspect-ratio:16/9;border-radius:16px}}
+.lp video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.lp:fullscreen{margin:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0}
+.lp.pfs{position:fixed;inset:0;margin:0;height:auto;aspect-ratio:auto;z-index:1000;border-radius:0}
+.lp.pfs.rot{inset:auto;top:0;left:100vw;width:100vh;width:100dvh;height:100vw;height:100dvw;transform-origin:0 0;transform:rotate(90deg)}
+.lt{position:absolute;top:0;left:0;right:0;padding:10px 14px 28px;background:linear-gradient(rgba(0,0,0,.75),transparent);font:700 .95rem Manrope,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:opacity .25s}
+.lc{position:absolute;left:0;right:0;bottom:0;padding:26px 10px 6px;background:linear-gradient(transparent,rgba(0,0,0,.88));transition:opacity .25s}
+.lp.idle .lc,.lp.idle .lt,.lp.idle .lbig{opacity:0;pointer-events:none}.lp.idle{cursor:none}
+.lc input[type=range]{display:block;width:100%;height:4px;margin:0 0 4px;border-radius:4px;outline:0;cursor:pointer;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,#f33 var(--p,100%),rgba(255,255,255,.3) var(--p,100%))}
+.lc input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#f33;border:0}
+.lc input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#f33;border:0}
+.lr{display:flex;align-items:center;gap:2px}.lr .sp{flex:1}
+.lr button{background:none;border:0;color:#fff;padding:8px;min-width:40px;border-radius:10px;display:grid;place-items:center;cursor:pointer;font:700 .8rem Manrope,sans-serif}
+.lr .llive{font-size:.72rem;opacity:.65;padding:6px 9px}.lr .llive.on{opacity:1;color:#ff5a50}
+.lbig{position:absolute;inset:0;margin:auto;width:62px;height:62px;border-radius:50%;background:rgba(0,0,0,.55);border:0;color:#fff;display:grid;place-items:center;cursor:pointer;transition:opacity .25s}
+.lspin{position:absolute;inset:0;margin:auto;width:42px;height:42px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:lspin .8s linear infinite;display:none;pointer-events:none}
+.lp.buf .lspin{display:block}.lp.buf .lbig{display:none}
+@keyframes lspin{to{transform:rotate(360deg)}}
+.lerr{position:absolute;inset:0;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px;font-size:.9rem}
+.lp.err .lerr{display:flex}
+.lerr button{border:0;border-radius:99px;padding:9px 26px;font:700 .9rem Manrope,sans-serif;background:var(--gold);color:var(--ink);cursor:pointer}
+#lqm{position:absolute;right:10px;bottom:62px;background:rgba(20,18,16,.95);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:4px;max-height:60%;overflow:auto}
+#lqm[hidden]{display:none}#lqm button{display:block;width:100%;text-align:left;color:#fff;background:none;border:0;padding:8px 18px;font:600 .85rem Manrope,sans-serif;cursor:pointer}
+.lh2{display:flex;justify-content:space-between;align-items:baseline;margin:6px 2px 10px}.lh2 h3{margin:0;font-family:Fraunces,serif;color:var(--gold)}.lh2 small{color:var(--mut)}
+.cmsg{grid-column:1/-1;text-align:center;color:var(--mut);padding:14px}
+.info-value{text-align:right;margin-left:14px;word-break:break-word}
+/* dialog */
+.dlg{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:20px;backdrop-filter:blur(4px)}.dlg[hidden]{display:none}
+.dbox{width:min(400px,100%);background:var(--bg2);border:1px solid var(--line);border-radius:22px;padding:26px 22px 20px;text-align:center;box-shadow:0 30px 80px -20px #000}
+.dbox .dic{font-size:2.4rem;line-height:1}.dbox h3{margin:10px 0 6px;font-family:Fraunces,serif}
+.dbox p{margin:0 0 18px;color:var(--mut);white-space:pre-line;font-size:.9rem;max-height:40vh;overflow:auto;word-break:break-word}
+.dbox .go{width:100%;flex:none}
 </style>
 </head>
 <body>
@@ -118,6 +148,11 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
             <div id="ln" style="display:grid; gap:10px;"></div>
         </div>
     </div>
+    <section id="lib" hidden>
+      <div class="lh"><h2>Library</h2><small id="lsz"></small></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="lgrid" id="lgrid"></div>
+    </section>
 </div>
 
 <div id="tab-sim" class="tab-content">
@@ -134,21 +169,24 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 </div>
 
 <div id="tab-live" class="tab-content">
-    <div class="box">
-        <h2 style="text-align:center; color:var(--gold); font-family:Fraunces; margin-top:0;">🔴 Live Matches</h2>
-        <div class="live-player-box">
-            <video id="live-player" 
-                   class="video-js vjs-big-play-centered vjs-fluid" 
-                   controls 
-                   preload="auto" 
-                   poster="developer.jpg" 
-                   data-setup='{"fluid": true}'>
-            </video>
-        </div>
-        <div class="channels-grid" id="channels-list">
-            <div style="grid-column:1/-1; text-align:center; color:var(--mut);">Loading Channels...</div>
+    <div class="lp" id="lp">
+        <video id="lv" playsinline webkit-playsinline preload="auto"></video>
+        <div class="lt" id="lname">Live Matches</div>
+        <div class="lspin"></div>
+        <button class="lbig" id="lbig" aria-label="Play/Pause"></button>
+        <div class="lerr"><div id="lerrt"></div><button id="lretry">Retry</button></div>
+        <div id="lqm" hidden></div>
+        <div class="lc">
+            <input type="range" id="lseek" min="0" max="1000" value="1000" aria-label="Seek">
+            <div class="lr">
+                <button id="lplay" aria-label="Play"></button><button id="lmute" aria-label="Mute"></button>
+                <button class="llive on" id="llive">&#9679; LIVE</button><span class="sp"></span>
+                <button id="lq" style="display:none">Auto</button><button id="lpip" aria-label="Picture in picture"></button><button id="lfs" aria-label="Fullscreen"></button>
+            </div>
         </div>
     </div>
+    <div class="lh2"><h3>&#128308; Live Channels</h3><small id="lcount"></small></div>
+    <div class="channels-grid" id="channels-list"></div>
 </div>
 
 <div id="tab-st" class="tab-content">
@@ -175,9 +213,10 @@ h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold),var(--gold
 
 <footer style="text-align:center; margin:30px 0; font-size:0.8rem; color:var(--mut);">Made with ❤️ by <b>M Usman Chachar</b></footer>
 </main>
+<div class="dlg" id="dlg" hidden><div class="dbox"><div class="dic" id="dic"></div><h3 id="dti"></h3><p id="dmsg"></p><button class="go" id="dok">OK</button></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
 <script src="player.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -190,6 +229,7 @@ function openTab(evt, tabId) {
     evt.currentTarget.classList.add("active");
     const titles = {'tab-dl': 'Downloader', 'tab-sim': 'SIM Data', 'tab-live': 'Live TV', 'tab-st': 'Status'};
     $('header-title').textContent = titles[tabId];
+    if(tabId!=='tab-live' && window.liveStop) liveStop();
 }
 
 function toast(m, duration = 2600) {
@@ -210,215 +250,238 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- ADVANCED DOWNLOAD LOGIC ---
-async function handleDownload(url, title) {
-    try {
-        if (typeof Lib !== 'undefined' && typeof Lib.download === 'function') {
-            Lib.download(url, title);
-            return;
-        }
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'blob';
-
-        let startTime = Date.now();
-
-        xhr.onprogress = (event) => {
-            if (event.lengthComputable) {
-                const percent = Math.round((event.loaded / event.total) * 100);
-                const loadedMB = (event.loaded / (1024 * 1024)).toFixed(2);
-                const totalMB = (event.total / (1024 * 1024)).toFixed(2);
-                const elapsed = (Date.now() - startTime) / 1000;
-                const speed = (event.loaded / elapsed / (1024 * 1024)).toFixed(2);
-                toast(`Downloading: ${percent}% | ${loadedMB}MB / ${totalMB}MB | ${speed} MB/s`, 1000);
-            }
-        };
-
-        xhr.onload = () => {
-            if (xhr.status === 200) {
-                const blob = xhr.response;
-                const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = title || 'usmods_file';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(blobUrl);
-                document.body.removeChild(a);
-                toast("Download Complete ✅", 3000);
-            } else { throw new Error(`Server error: ${xhr.status}`); }
-        };
-
-        xhr.onerror = () => { throw new Error("Network error"); };
-        xhr.send();
-        toast("Starting Download...");
-    } catch (e) {
-        window.open(url, '_blank');
-        toast(`Error: ${e.message}. Opening in tab...`, 4000);
-    }
+// --- DIALOG (error / not found) ---
+function showDlg(title,msg,kind){
+    $('dic').textContent={error:'❌',nf:'🔍',warn:'⚠️'}[kind]||'ℹ️';
+    $('dti').textContent=title; $('dmsg').textContent=msg; $('dlg').hidden=false;
 }
+$('dok').onclick=()=>{$('dlg').hidden=true};
+$('dlg').addEventListener('click',e=>{if(e.target.id==='dlg')$('dlg').hidden=true});
 
-// --- LIVE TV LOGIC ---
-(async function initLiveTV() {
-    const API_URL = "https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest";
-    const player = videojs('live-player', {
-        fluid: true, 
-        playbackRates: [0.5, 1, 1.5, 2],
-        controlBar: { fullscreenToggle: true, playbackRateMenuButton: true }
+// --- DOWNLOADER ---
+function renderRes(j){
+    $('ti').textContent=j.title||'Media'; $('mt').textContent=[j.provider,j.platform].filter(Boolean).join(' • ');
+    $('th').referrerPolicy='no-referrer'; $('th').src=j.thumb||''; $('th').style.display=j.thumb?'block':'none';
+    const box=$('ln'); box.innerHTML='';
+    j.links.forEach(l=>{
+        const b=document.createElement('button'); b.className='dl';
+        b.style.cssText='display:flex;align-items:center;gap:10px;padding:12px;background-color:rgba(255,255,255,.05);color:var(--fg);border:1px solid var(--line);border-radius:14px;cursor:pointer;text-align:left;font:inherit';
+        b.innerHTML=`<span style="background:var(--gold);color:var(--ink);padding:5px;border-radius:8px;display:grid">${ICON}</span><span><b></b><br><small style="color:var(--mut)"></small></span>`;
+        b.querySelector('b').textContent=l.label; b.querySelector('small').textContent=l.type;
+        b.onclick=async()=>{
+            await Lib.download(l,j.title,j.thumb,b);
+            if(b.querySelector('small').textContent==='Tap to retry'){ toast('Proxy fail, direct link khul raha hai',3500); window.open(l.url,'_blank'); }
+        };
+        box.append(b);
     });
-    const grid = $('channels-list');
-    try {
-        const r = await fetch(API_URL);
-        const d = await r.json();
-        const channels = d.record && d.record.channels ? d.record.channels : [];
-        if (channels.length === 0) throw new Error("API mein koi channels nahi mile");
-        grid.innerHTML = '';
-        channels.forEach((ch) => {
-            const div = document.createElement('div');
-            div.className = 'channel-item';
-            const logo = ch.logo || 'https://via.placeholder.com/50';
-            const name = ch.name || 'Unknown';
-            const url = ch.url || '';
-            div.innerHTML = `<img src="${logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${name}</span>`;
-            div.onclick = () => {
-                document.querySelectorAll('.channel-item').forEach(i => i.classList.remove('active'));
-                div.classList.add('active');
-                if (url) {
-                    player.src({ src: url, type: 'application/x-mpegURL' });
-                    player.play();
-                    toast(`Playing ${name}...`);
-                } else { toast("Link missing!"); }
-            };
-            grid.appendChild(div);
-        });
-    } catch(e) { grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--err)">API Error: ${e.message}</div>`; }
+    $('res').style.display='block';
+}
+async function go(){
+    const u=$('u').value.trim(); if(!u) return toast('Link daalo boss!');
+    $('go').disabled=true; $('res').style.display='none'; $('sk').style.display='block'; $('st').textContent='APIs try ho rahi hain...'; $('log').innerHTML='';
+    try{
+        const p=$('p').value, r=await fetch('/api/dl?url='+encodeURIComponent(u)+(p?'&p='+encodeURIComponent(p):''));
+        let j; try{ j=await r.json(); }catch{ throw new Error('Server ne galat jawab diya ('+r.status+')'); }
+        if(j.ok && j.links && j.links.length) renderRes(j);
+        else showDlg('Download nahi ho saka',(j.error||'Link galat hai ya koi API chali nahi')+(j.tried&&j.tried.length?'\n\n'+j.tried.slice(0,6).join('\n'):''),'error');
+    }catch(e){ showDlg('Network Error',e.message||'Internet check karo','error'); }
+    $('st').textContent=''; $('sk').style.display='none'; $('go').disabled=false;
+}
+$('go').onclick=go;
+$('u').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+$('pst').onclick=async()=>{ try{ $('u').value=await navigator.clipboard.readText(); }catch{ toast('Clipboard allow karo ya manually paste karo'); } };
+
+// --- LIVE MATCHES (YouTube style player) ---
+(function(){
+const lp=$('lp'),v=$('lv'),grid=$('channels-list'),API='https://api.jsonbin.io/v3/b/699204d8ae596e708f2d1de2/latest';
+const S=d=>`<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">${d}</svg>`;
+const I={play:S('<path d="M8 5v14l11-7z"/>'),pause:S('<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'),
+ vol:S('<path d="M4 9v6h4l5 4V5L8 9H4zm12 3a4 4 0 0 0-2-3.5v7A4 4 0 0 0 16 12z"/>'),
+ mute:S('<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9l5 6m0-6l-5 6" fill="none" stroke="currentColor" stroke-width="2"/>'),
+ fs:S('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2"/>'),
+ xfs:S('<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2.2"/>'),
+ pip:S('<path d="M3 5h18v14H3zM12 11h8v6h-8z" fill="none" stroke="currentColor" stroke-width="2"/>')};
+const FB='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="24" fill="#b8883a"/><path d="M19 15v18l15-9z" fill="#fff"/></svg>');
+let hls=null,hide,tries=0;
+$('lplay').innerHTML=$('lbig').innerHTML=I.play; $('lmute').innerHTML=I.vol; $('lpip').innerHTML=I.pip; $('lfs').innerHTML=I.fs;
+if(!document.pictureInPictureEnabled) $('lpip').style.display='none';
+
+const show=()=>{ lp.classList.remove('idle'); clearTimeout(hide); if(!v.paused) hide=setTimeout(()=>lp.classList.add('idle'),3000); };
+const range=()=>{ const s=v.seekable; return s.length?[s.start(0),s.end(s.length-1)]:null; };
+const seekBy=d=>{ const r=range(); if(r) v.currentTime=Math.min(r[1],Math.max(r[0],v.currentTime+d)); };
+const toggle=()=>!window._lc?toast('Pehle neeche se channel chuno'):v.paused?v.play().catch(()=>{}):v.pause();
+function fail(m){ lp.classList.remove('buf'); lp.classList.add('err'); $('lerrt').textContent=m; }
+
+function buildQ(lv){
+  const m=$('lqm'); m.innerHTML='';
+  const add=(t,i)=>{ const b=document.createElement('button'); b.textContent=t; b.onclick=()=>{ hls.currentLevel=i; $('lq').textContent=i<0?'Auto':t; m.hidden=true; }; m.append(b); };
+  add('Auto',-1); lv.map((l,i)=>[l,i]).sort((a,b)=>b[0].height-a[0].height).forEach(([l,i])=>add(l.height?l.height+'p':Math.round(l.bitrate/1000)+'k',i));
+  $('lq').style.display=lv.length>1?'':'none'; $('lq').textContent='Auto';
+}
+function play(ch){
+  tries=0; lp.classList.remove('err'); lp.classList.add('buf'); $('lname').textContent=ch.name; window._lc=ch;
+  if(hls){ hls.destroy(); hls=null; } $('lq').style.display='none';
+  const u=ch.url, isHls=!/\.(mp4|webm|ogg)(\?|$)/i.test(u);
+  if(isHls && window.Hls && Hls.isSupported()){
+    hls=new Hls({enableWorker:true,maxBufferLength:30,liveSyncDurationCount:3});
+    hls.loadSource(u); hls.attachMedia(v);
+    hls.on(Hls.Events.MANIFEST_PARSED,(e,d)=>{ buildQ(d.levels); v.play().catch(()=>{}); });
+    hls.on(Hls.Events.ERROR,(e,d)=>{
+      if(!d.fatal) return;
+      if(d.type===Hls.ErrorTypes.NETWORK_ERROR && tries++<3) hls.startLoad();
+      else if(d.type===Hls.ErrorTypes.MEDIA_ERROR && tries++<3) hls.recoverMediaError();
+      else fail('Stream load nahi hui. Link band ho sakta hai ya http (non-https) hai.');
+    });
+  } else { v.src=u; v.play().catch(()=>{}); }
+  lp.scrollIntoView({behavior:'smooth',block:'start'});
+}
+v.onplay=v.onpause=()=>{ const p=v.paused; $('lplay').innerHTML=$('lbig').innerHTML=I[p?'play':'pause']; show(); };
+v.onwaiting=()=>lp.classList.add('buf');
+v.onplaying=v.oncanplay=()=>lp.classList.remove('buf');
+v.onerror=()=>{ if(!hls) fail('Video play nahi ho saki.'); };
+v.ontimeupdate=()=>{ const r=range(); if(!r) return; const k=Math.max(1,r[1]-r[0]), p=(v.currentTime-r[0])/k*100;
+  $('lseek').value=p*10; $('lseek').style.setProperty('--p',p+'%'); $('llive').classList.toggle('on',r[1]-v.currentTime<12); };
+$('lseek').oninput=()=>{ const r=range(); if(r) v.currentTime=r[0]+$('lseek').value/1000*(r[1]-r[0]); };
+$('lplay').onclick=$('lbig').onclick=toggle;
+$('lmute').onclick=()=>{ v.muted=!v.muted; $('lmute').innerHTML=v.muted?I.mute:I.vol; };
+$('llive').onclick=()=>{ const r=range(); if(r) v.currentTime=r[1]-1; v.play().catch(()=>{}); };
+$('lq').onclick=()=>{ $('lqm').hidden=!$('lqm').hidden; };
+$('lpip').onclick=()=>document.pictureInPictureElement?document.exitPictureInPicture():v.requestPictureInPicture().catch(()=>toast('PiP supported nahi'));
+$('lretry').onclick=()=>window._lc&&play(window._lc);
+
+// fullscreen: native + landscape lock; fallback = CSS rotate (iPhone / lock unsupported)
+const pseudo=()=>{ lp.classList.add('pfs'); document.body.style.overflow='hidden'; fit(); };
+const fit=()=>{ if(lp.classList.contains('pfs')) lp.classList.toggle('rot',innerHeight>innerWidth); };
+async function enter(){
+  if(!lp.requestFullscreen) return pseudo();
+  try{ await lp.requestFullscreen({navigationUI:'hide'}); }catch{ return pseudo(); }
+  try{ await screen.orientation.lock('landscape'); }
+  catch{ if(innerHeight>innerWidth){ try{ await document.exitFullscreen(); }catch{} pseudo(); } }
+}
+function leave(){
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  lp.classList.remove('pfs','rot'); document.body.style.overflow='';
+  try{ screen.orientation.unlock(); }catch{}
+}
+$('lfs').onclick=()=>(document.fullscreenElement||lp.classList.contains('pfs'))?leave():enter();
+document.addEventListener('fullscreenchange',()=>{ const f=!!document.fullscreenElement||lp.classList.contains('pfs'); $('lfs').innerHTML=f?I.xfs:I.fs; if(!document.fullscreenElement){ try{ screen.orientation.unlock(); }catch{} } });
+addEventListener('resize',fit); addEventListener('orientationchange',fit);
+addEventListener('keydown',e=>{ if(!$('tab-live').classList.contains('active')) return;
+  if(e.key==='Escape') leave(); else if(e.key==='f') $('lfs').click(); else if(e.key===' '&&e.target===document.body){ e.preventDefault(); toggle(); } else if(e.key==='m') $('lmute').click(); });
+
+// tap = show/hide controls, double tap = +-10s
+let lt=0;
+lp.addEventListener('click',e=>{
+  if(e.target.closest('.lc,.lerr,#lbig,#lqm')) return; $('lqm').hidden=true;
+  const n=Date.now(), r=lp.getBoundingClientRect(), right=lp.classList.contains('rot')?e.clientY>innerHeight/2:e.clientX-r.left>r.width/2;
+  if(n-lt<300){ lt=0; seekBy(right?10:-10); show(); }
+  else{ lt=n; setTimeout(()=>{ if(lt===n){ lt=0; if(lp.classList.contains('idle')) show(); else{ lp.classList.add('idle'); clearTimeout(hide); } } },280); }
+});
+lp.addEventListener('pointermove',()=>{ if(!v.paused) show(); });
+window.liveStop=()=>{ leave(); if(hls){ hls.destroy(); hls=null; } v.pause(); v.removeAttribute('src'); v.load(); lp.classList.remove('buf','err'); $('lname').textContent='Live Matches'; document.querySelectorAll('.channel-item').forEach(i=>i.classList.remove('active')); };
+
+// channels
+async function loadChannels(){
+  grid.innerHTML='<div class="cmsg">Loading Channels...</div>';
+  try{
+    const r=await fetch(API); if(!r.ok) throw new Error('API '+r.status);
+    const d=await r.json(), ch=(d.record&&d.record.channels||[]).filter(c=>c&&c.url);
+    if(!ch.length) throw new Error('Koi channel nahi mila');
+    grid.innerHTML=''; $('lcount').textContent=ch.length+' channels';
+    ch.forEach(c=>{
+      const div=document.createElement('div'), img=document.createElement('img'), sp=document.createElement('span');
+      div.className='channel-item'; img.src=c.logo||FB; img.loading='lazy'; img.referrerPolicy='no-referrer'; img.onerror=()=>{ img.onerror=null; img.src=FB; };
+      sp.textContent=c.name||'Channel'; div.append(img,sp);
+      div.onclick=()=>{ document.querySelectorAll('.channel-item').forEach(i=>i.classList.remove('active')); div.classList.add('active'); play({name:c.name||'Channel',url:c.url}); };
+      grid.append(div);
+    });
+  }catch(e){
+    grid.innerHTML=''; const m=document.createElement('div'); m.className='cmsg'; m.style.color='var(--err)'; m.textContent='Channels load nahi hue: '+e.message+' ';
+    const b=document.createElement('button'); b.className='action-btn'; b.textContent='Retry'; b.onclick=loadChannels; m.append(b); grid.append(m);
+  }
+}
+loadChannels();
 })();
 
-async function go(){
-    let u=$('u').value.trim(); if(!u){ toast('Link daalo boss!'); return }
-    $('go').disabled=true; $('res').style.display='none'; $('sk').style.display='block'; $('st').textContent=''; $('log').innerHTML='';
-    try {
-        const r = await fetch('/api/dl?url='+encodeURIComponent(u));
-        const j = await r.json();
-        if(j.ok){
-            $('ti').textContent = j.title;
-            $('mt').textContent = j.provider;
-            $('th').src = j.thumb || '';
-            $('ln').innerHTML = j.links.map(l => `
-                <button class="dl" style="display:flex; align-items:center; gap:10px; padding:12px; background:rgba(255,255,255,0.05); color:var(--fg); border:1px solid var(--line); border-radius:14px; cursor:pointer; text-align:left;" 
-                onclick="handleDownload('${l.url}','${j.title.replace(/'/g, "\\'")}')">
-                    <span style="background:var(--gold); color:var(--ink); padding:5px; border-radius:8px;">${ICON}</span>
-                    <span><b>${l.label}</b><br><small style="color:var(--mut)">${l.type}</small></span>
-                </button>`).join('');
-            $('res').style.display='block';
-        } else { toast('Link invalid hai!'); }
-    } catch(e){ toast('Network Error!'); }
-    $('sk').style.display='none'; $('go').disabled=false;
+// --- SIM DATA ---
+const SIM_APIS=[
+ {n:'FT SimDB',u:n=>`https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${n}`},
+ {n:'ZHH DB',u:n=>`https://simdbapi.zhhtools.workers.dev/?num=${n}`},
+ {n:'Faisal DB',u:n=>`https://faisal-ali-truecaller.ftgmhacks.workers.dev/?key=pak-digital.store&number=${n}`}];
+const val=x=>{ x=(x==null?'':String(x)).trim(); return /^(null|undefined|n\/a|none|-|0)?$/i.test(x)?'':x; };
+function simRecs(d){
+    let a=d&&(d.records||d.data||d.result||d.results||d); if(!Array.isArray(a)) a=a?[a]:[];
+    return a.filter(x=>x&&typeof x==='object').map(x=>({name:val(x.name||x.fullName||x.full_name||x.Name),cnic:val(x.cnic||x.CNIC||x.nic),address:val(x.address||x.Address),number:val(x.number||x.mobile||x.Mobile||x.num)})).filter(r=>r.name||r.cnic||r.address);
 }
-$('go').onclick = go;
-$('pst').onclick = async () => { $('u').value = await navigator.clipboard.readText(); };
-
-// --- FIXED SIM DATABASE LOGIC ---
-async function searchSim() {
-    let num = $('simNum').value.trim(); if(!num) return toast('Number enter karein!');
-    $('simGo').disabled = true; $('simRes').style.display = 'none'; $('simBody').innerHTML = '';
-    $('simLog').textContent = 'Searching Database...';
-    
-    const apis = [
-        `https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${num}`, 
-        `https://simdbapi.zhhtools.workers.dev/?num=${num}`
-    ];
-    
-    let foundAny = false;
-    try {
-        for(let url of apis) {
-            const r = await fetch(url);
-            const d = await r.json();
-            const data = d.records ? d.records[0] : d;
-            
-            // Only add card if essential data (name) exists
-            if(data && (data.name || data.fullName)) {
-                foundAny = true;
-                const cardId = `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-                $('simBody').innerHTML += `
-                    <div class="premium-card" id="${cardId}">
-                        <div class="info-row"><span class="info-label">Name</span><span class="info-value">${data.name || data.fullName}</span></div>
-                        <div class="info-row"><span class="info-label">CNIC</span><span class="info-value">${data.cnic || 'Not found'}</span></div>
-                        <div class="info-row"><span class="info-label">Address</span><span class="info-value">${data.address || 'Not found'}</span></div>
-                        <div class="card-footer">Data Provided by M Usman Chachar</div>
-                        <div class="card-actions">
-                            <button class="action-btn" onclick="saveCardImage('${cardId}')">💾 Save Image</button>
-                        </div>
-                    </div>`;
-            }
-        }
-        
-        if(foundAny) {
-            $('simRes').style.display = 'block';
-            $('simLog').textContent = '';
-        } else {
-            $('simLog').innerHTML = `<span style="color:var(--err)">❌ No data found for this number in any SIM DB.</span>`;
-        }
-    } catch(e) {
-        $('simLog').innerHTML = `<span style="color:var(--err)">Network Error. Please try again.</span>`;
+function simCard(r,id,num){
+    const d=document.createElement('div'); d.className='premium-card'; d.id=id;
+    [['Name',r.name],['Number',r.number||num],['CNIC',r.cnic],['Address',r.address]].forEach(([k,v])=>{
+        const row=document.createElement('div'), a=document.createElement('span'), b=document.createElement('span');
+        row.className='info-row'; a.className='info-label'; a.textContent=k; b.className='info-value'; b.textContent=v||'Not found'; row.append(a,b); d.append(row);
+    });
+    d.insertAdjacentHTML('beforeend','<div class="card-footer">Data Provided by M Usman Chachar</div><div class="card-actions"><button class="action-btn">💾 Save Image</button></div>');
+    d.querySelector('button').onclick=()=>saveCardImage(id); return d;
+}
+async function searchSim(){
+    let num=$('simNum').value.replace(/[\s-]/g,''); if(!num) return toast('Number enter karein!');
+    num=num.replace(/^\+?92/,'0');
+    if(!/^\d{10,13}$/.test(num)) return showDlg('Number galat hai','Sahi number likho, jaise 03001234567','warn');
+    $('simGo').disabled=true; $('simRes').style.display='none'; $('simBody').innerHTML='';
+    const seen=new Set(), recs=[]; let errs=0;
+    for(const [i,a] of SIM_APIS.entries()){
+        $('simLog').textContent=`Searching ${a.n} (${i+1}/${SIM_APIS.length})...`;
+        try{
+            const c=new AbortController(), t=setTimeout(()=>c.abort(),12000);
+            const r=await fetch(a.u(num),{signal:c.signal}); clearTimeout(t);
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            simRecs(await r.json()).forEach(x=>{ const k=x.name+'|'+x.cnic; if(!seen.has(k)){ seen.add(k); recs.push(x); } });
+            if(recs.length) break;
+        }catch(e){ errs++; }
     }
-    $('simGo').disabled = false;
+    $('simLog').textContent='';
+    if(recs.length){ recs.forEach((r,i)=>$('simBody').append(simCard(r,'card-'+Date.now()+'-'+i,num))); $('simRes').style.display='block'; }
+    else if(errs===SIM_APIS.length) showDlg('Server Error','Sab databases se connection nahi ho saka. Internet check karo ya thori der baad try karo.','error');
+    else showDlg('Not Found','Is number ('+num+') ka koi data nahi mila.'+(errs?'\n\n('+errs+' database respond nahi kar saka)':''),'nf');
+    $('simGo').disabled=false;
 }
-$('simGo').onclick = searchSim;
-
-window.saveCardImage = async (id) => {
-    const element = $(id);
-    const canvas = await html2canvas(element, { backgroundColor: '#0d0c0f', scale: 2 });
-    const link = document.createElement('a');
-    link.download = `USMODS_${Date.now()}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    toast('Saved to Gallery!');
+$('simGo').onclick=searchSim;
+$('simNum').addEventListener('keydown',e=>{if(e.key==='Enter')searchSim()});
+window.saveCardImage=async id=>{
+    const el=$(id), act=el.querySelector('.card-actions'); act.style.display='none';
+    try{
+        const canvas=await html2canvas(el,{backgroundColor:'#0d0c0f',scale:2}), a=document.createElement('a');
+        a.download=`USMODS_${Date.now()}.png`; a.href=canvas.toDataURL('image/png'); a.click(); toast('Image save ho gayi!');
+    }catch(e){ showDlg('Save nahi hui','Image banane me error aaya: '+(e.message||e),'error'); }
+    act.style.display='';
 };
 
+// --- STATUS ---
 const DB=()=>new Promise((res,rej)=>{const r=indexedDB.open('usmods-status',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const kv=async(m,k,v)=>{const d=await DB();return new Promise((res,rej)=>{const t=d.transaction('k',m==='get'?'readonly':'readwrite'),s=t.objectStore('k'),r=m==='get'?s.get(k):s.put(v,k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})};
-
-let statusHandle=null;
-async function scanStatus(){
-    if(!statusHandle) return;
-    const files=[];
-    for await(const e of statusHandle.values()){
-        if(e.kind==='file' && /\.(jpe?g|png|webp|mp4)$/i.test(e.name)){
-            try{ files.push(await e.getFile()) } catch{}
-        }
-    }
-    $('sgrid').innerHTML = '';
-    files.forEach(f => {
-        const u = URL.createObjectURL(f);
-        const div = document.createElement('div');
-        div.className = 'sc';
-        div.innerHTML = (f.type.includes('video') ? `<video src="${u}"></video>` : `<img src="${u}">`) + `<button class="sv" onclick="Lib.addFile(new File([${u}], '${f.name}'))">Save</button>`;
-        $('sgrid').appendChild(div);
+function renderStatus(files){
+    const g=$('sgrid'); g.innerHTML='';
+    if(!files.length){ g.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--mut)">Koi status nahi mila</div>'; return; }
+    files.forEach(f=>{
+        const isV=/^video/.test(f.type)||/\.mp4$/i.test(f.name), d=document.createElement('div'), m=document.createElement(isV?'video':'img'), b=document.createElement('button');
+        d.className='sc'; m.src=URL.createObjectURL(f); if(isV){ m.muted=true; m.preload='metadata'; }
+        b.className='sv'; b.textContent='Save'; b.onclick=()=>Lib.addFile(f,isV?'video':'image'); d.append(m,b); g.append(d);
     });
 }
-
-$('sgrant').onclick = async () => {
-    try {
-        statusHandle = await showDirectoryPicker();
-        await kv('put','h',statusHandle);
-        scanStatus();
-    } catch(e) { toast('Folder access denied!'); }
-};
-$('sref').onclick = scanStatus;
-$('spick').onclick = () => $('sfile').click();
-$('sfile').onchange = (e) => {
-    const files = Array.from(e.target.files);
-    $('sgrid').innerHTML = '';
-    files.forEach(f => {
-        const u = URL.createObjectURL(f);
-        const div = document.createElement('div');
-        div.className = 'sc';
-        div.innerHTML = `<img src="${u}"><button class="sv" onclick="Lib.addFile(new File([${u}], '${f.name}'))">Save</button>`;
-        $('sgrid').appendChild(div);
-    });
-};
+let statusHandle=null;
+async function scanStatus(){
+    try{
+        if(!statusHandle) statusHandle=await kv('get','h');
+        if(!statusHandle) return toast('Pehle Folder Chuno');
+        const o={mode:'read'};
+        if(await statusHandle.queryPermission(o)!=='granted' && await statusHandle.requestPermission(o)!=='granted') return toast('Permission nahi mili');
+        const files=[]; for await(const e of statusHandle.values()) if(e.kind==='file'&&/\.(jpe?g|png|webp|mp4)$/i.test(e.name)){ try{ files.push(await e.getFile()); }catch{} }
+        renderStatus(files);
+    }catch(e){ toast('Status folder nahi khul saka'); }
+}
+$('sgrant').onclick=async()=>{ try{ statusHandle=await showDirectoryPicker(); await kv('put','h',statusHandle); scanStatus(); }catch(e){ toast('Folder access denied!'); } };
+$('sref').onclick=scanStatus;
+$('spick').onclick=()=>$('sfile').click();
+$('sfile').onchange=e=>renderStatus(Array.from(e.target.files));
 
 fetch('/api/dl?list=1').then(r=>r.json()).then(l=>{$('p').innerHTML='<option value="">Auto</option>'+l.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}).catch(()=>{});
 </script>
