@@ -415,7 +415,7 @@ loadChannels();
 const SIM_APIS=[
  {n:'FT SimDB',u:n=>`https://ft-simdb.ftshehryar10044.workers.dev/ft/api?num=${n}`},
  {n:'ZHH DB',u:n=>`https://simdbapi.zhhtools.workers.dev/?num=${n}`},
- {n:'Faisal DB',u:n=>`https://faisal-ali-truecaller.ftgmhacks.workers.dev/?key=pak-digital.store&number=${n}`}];
+ {n:'Faisal DB',u:n=>`https://faisal-ali-truecaller.ftgmhacks.workers.dev/?key=ftgm&number=${n}`}];
 const val=x=>{ x=(x==null?'':String(x)).trim(); return /^(null|undefined|n\/a|none|-|0)?$/i.test(x)?'':x; };
 function simRecs(d){
     let a=d&&(d.records||d.data||d.result||d.results||d); if(!Array.isArray(a)) a=a?[a]:[];
